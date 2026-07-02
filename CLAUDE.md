@@ -42,7 +42,14 @@ Les deux angles tournent en parallèle dans le même `tick()`, chacun avec son p
 
 **Mode de contrôle : REVIRÉ vers grille spatiale avec placement.** Historique : d'abord tranché "dashboard, pas de grille" (raisonnement : éviter le gros chantier caméra/collisions, cohérent avec "jeu simple qui ne scale pas"). En expliquant ce choix, la distinction n'a pas été assez claire : "dashboard" a été présenté comme "pas de carte à la Pharaoh" sans dire explicitement que ça supprimait *toute* mécanique de construction (même un simple bouton "construire" sans carte). L'utilisateur pensait donc que la construction/placement restait possible en mode dashboard — ce n'était pas le cas, d'où le revirement une fois le malentendu clarifié.
 
-**Décision actuelle** : vrai placement spatial sur une grille (le joueur clique une case pour y construire un bâtiment), pas juste un bouton d'achat sans carte. Reste à définir avant implémentation : taille de grille (probablement petite et fixe pour éviter caméra/scroll), empreinte des bâtiments (1x1 partout recommandé pour rester simple), rendu (`src/presentation/tile.ts` existe déjà pour une tuile isolée, il faut l'étendre à une grille composée).
+**Décision actuelle** : vrai placement spatial sur une grille (le joueur clique une case pour y construire un bâtiment), pas juste un bouton d'achat sans carte.
+
+**Ambition demandée vs scope retenu pour la v1** : l'utilisateur voulait au départ carte scrollable avec caméra + empreintes de bâtiments variables (2x2, 1x3...) + construction ET démolition dès le départ — un vrai chantier de city-builder complet. Après avoir nommé la tension avec le cap "jeu simple qui ne scale pas", **décision : phaser (option 2 choisie explicitement)**. La v1 implémentée reste volontairement modeste :
+- Grille **petite et fixe** (pas de scroll/caméra/pan) ;
+- Empreinte **1x1 partout** (pas de collision multi-case) ;
+- **Construction uniquement**, pas de démolition/déplacement.
+
+Caméra, empreintes variables et démolition sont **prévues plus tard**, une fois la v1 validée comme agréable à jouer — pas abandonnées, juste reportées. Ne pas les considérer comme hors-scope définitif si le sujet revient.
 
 **Leçon retenue** : être explicite sur *toutes* les mécaniques qu'un choix élimine, pas seulement la plus évidente, avant de faire valider une décision structurante.
 
