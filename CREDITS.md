@@ -5,4 +5,4 @@ Liste de tout asset externe (art, son, police) utilisé dans le projet.
 
 | Asset | Auteur | Source | Licence | Utilisé pour |
 |---|---|---|---|---|
-| _(aucun pour l'instant — tout est en placeholder généré)_ | | | | |
+| RPG Urban Kit | Kenney (kenney.nl) | [itch.io](https://kenney-assets.itch.io/rpg-urban-kit) | CC0 1.0 (attribution non obligatoire mais appréciée) | Quelques tuiles du pack de démo (`src/content/demo/assets.ts`), thème provisoire en attendant un choix définitif |
