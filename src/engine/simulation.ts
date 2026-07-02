@@ -1,78 +1,94 @@
-import type { ContentPack, Recipe, Tier } from './types';
+import type { Building, ContentPack } from './types';
 
-export interface TierFlowResult {
-  tierId: string;
-  /** Resource id imported from the previous tier, or null for the first tier. */
-  importResource: string | null;
-  /** Total demand for the imported resource across every recipe in this tier that consumes it. */
-  need: number;
-  /** Actual amount of the imported resource received from the previous tier. */
-  received: number;
-  /** min(1, received / need); 1 when there is no upstream constraint. */
-  efficiency: number;
-  /** exportRecipe.capacity * efficiency — becomes `received` for the next tier. */
-  exportRate: number;
-  /** Resource id this tier exports to the next one. */
-  exportResource: string;
+export interface EconomyState {
+  /** Resource id -> quantity currently in stock. */
+  stocks: Record<string, number>;
+  money: number;
+  /** Mutable copy of the pack's buildings — capacities grow independently of the (immutable) pack. */
+  buildings: Building[];
 }
 
-function findExportRecipe(recipes: Recipe[], tier: Tier): Recipe {
-  const recipe = recipes.find((r) => r.id === tier.exportRecipe);
-  if (!recipe) {
-    throw new Error(`Tier "${tier.id}" references unknown export recipe "${tier.exportRecipe}"`);
-  }
-  return recipe;
+export function createInitialState(pack: ContentPack, startingMoney = 0): EconomyState {
+  const stocks: Record<string, number> = {};
+  for (const resource of pack.resources) stocks[resource.id] = 0;
+  return {
+    stocks,
+    money: startingMoney,
+    buildings: pack.buildings.map((building) => ({ ...building })),
+  };
+}
+
+export interface TickResult {
+  /** Building id -> units actually produced this tick (0..capacity, throttled by input availability). */
+  produced: Record<string, number>;
+  /** Money earned this tick from auto-selling final goods. */
+  revenue: number;
 }
 
 /**
- * Resolves the per-tick flow across all tiers of a content pack.
+ * Advances the economy by one tick: each building consumes its recipe's
+ * inputs from stock (throttled to whatever is actually available) and adds
+ * its output to stock, then any resource with a sellPrice is auto-sold off.
  *
- * Only the cross-tier boundary is throttled: a tier's own recipes are assumed
- * to always meet their local (raw-material) demand. This mirrors the source
- * design's explicit bottleneck formula and is what makes over/under-building a
- * tier's capacity relative to the flow it actually receives a live, ongoing
- * trade-off rather than a one-time gate.
+ * Buildings run in array order and each one claims stock before the next —
+ * a building earlier in `pack.buildings` can starve a later one competing
+ * for the same input. Acceptable for a single flat economy; revisit with
+ * fair-share allocation if that ordering ever becomes a real balance issue.
  */
-export function resolveFlow(pack: ContentPack): TierFlowResult[] {
-  const tiersSorted = [...pack.tiers].sort((a, b) => a.order - b.order);
-  const results: TierFlowResult[] = [];
+export function tick(pack: ContentPack, state: EconomyState): TickResult {
+  const recipesById = new Map(pack.recipes.map((recipe) => [recipe.id, recipe]));
+  const produced: Record<string, number> = {};
 
-  let previousExportResource: string | null = null;
-  let previousExportRate = 0;
-
-  for (const tier of tiersSorted) {
-    const exportRecipe = findExportRecipe(pack.recipes, tier);
-    const tierRecipes = pack.recipes.filter((r) => r.tier === tier.id);
-
-    let need = 0;
-    let received = 0;
-    let efficiency = 1;
-
-    if (previousExportResource) {
-      const importResource = previousExportResource;
-      need = tierRecipes.reduce((sum, r) => {
-        const input = r.inputs.find((i) => i.resource === importResource);
-        return input ? sum + input.quantity * r.capacity : sum;
-      }, 0);
-      received = previousExportRate;
-      efficiency = need > 0 ? Math.min(1, received / need) : 1;
+  for (const building of state.buildings) {
+    const recipe = recipesById.get(building.recipe);
+    if (!recipe) {
+      throw new Error(`Building "${building.id}" references unknown recipe "${building.recipe}"`);
     }
 
-    const exportRate = exportRecipe.capacity * efficiency;
+    let units = building.capacity;
+    for (const input of recipe.inputs) {
+      const available = state.stocks[input.resource] ?? 0;
+      units = Math.min(units, available / input.quantity);
+    }
+    units = Math.max(0, units);
 
-    results.push({
-      tierId: tier.id,
-      importResource: previousExportResource,
-      need,
-      received,
-      efficiency,
-      exportRate,
-      exportResource: exportRecipe.output.resource,
-    });
+    for (const input of recipe.inputs) {
+      state.stocks[input.resource] -= input.quantity * units;
+    }
+    state.stocks[recipe.output.resource] = (state.stocks[recipe.output.resource] ?? 0) + recipe.output.quantity * units;
 
-    previousExportResource = exportRecipe.output.resource;
-    previousExportRate = exportRate;
+    produced[building.id] = units;
   }
 
-  return results;
+  let revenue = 0;
+  for (const resource of pack.resources) {
+    if (resource.sellPrice) {
+      const quantity = state.stocks[resource.id] ?? 0;
+      revenue += quantity * resource.sellPrice;
+      state.stocks[resource.id] = 0;
+    }
+  }
+  state.money += revenue;
+
+  return { produced, revenue };
+}
+
+/**
+ * Spends money to add capacity to a building. Silently caps the increase at
+ * whatever `state.money` can afford, and returns the capacity actually
+ * added (0 if the building is unaffordable at all).
+ */
+export function invest(state: EconomyState, buildingId: string, capacityDelta: number): number {
+  const building = state.buildings.find((b) => b.id === buildingId);
+  if (!building) {
+    throw new Error(`Unknown building "${buildingId}"`);
+  }
+  if (capacityDelta <= 0) return 0;
+
+  const affordable = building.capacityCost > 0 ? state.money / building.capacityCost : capacityDelta;
+  const actualDelta = Math.min(capacityDelta, Math.max(0, affordable));
+
+  building.capacity += actualDelta;
+  state.money -= actualDelta * building.capacityCost;
+  return actualDelta;
 }

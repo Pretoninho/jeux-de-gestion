@@ -1,75 +1,105 @@
-import { resolveFlow } from './engine/simulation';
+import { createInitialState, invest, tick } from './engine/simulation';
 import { GameLoop } from './engine/gameLoop';
 import { demoPack } from './content/demo';
 import { demoThemeAssets } from './content/demo/assets';
 import { renderTile } from './presentation/tile';
-import type { ContentPack } from './engine/types';
 
 /**
  * This file is a throwaway dev harness proving the engine, the demo content
  * pack, and the game loop wire together end to end. It is not the real UI —
- * that comes later once a theme and a per-tier control mode are chosen.
+ * that comes later once a theme and a control mode are chosen.
  */
 
-const pack: ContentPack = structuredClone(demoPack);
-const tierLabelById = new Map(pack.tiers.map((t) => [t.id, t.label]));
-const resourceLabelById = new Map(pack.resources.map((r) => [r.id, r.label]));
+const pack = demoPack;
+const state = createInitialState(pack, 20);
+const resourceById = new Map(pack.resources.map((r) => [r.id, r]));
+const recipeById = new Map(pack.recipes.map((r) => [r.id, r]));
+
+function formatRecipe(recipeId: string): string {
+  const recipe = recipeById.get(recipeId);
+  if (!recipe) return recipeId;
+  const inputs = recipe.inputs.map((i) => `${i.quantity} ${resourceById.get(i.resource)?.label}`).join(' + ') || '—';
+  return `${inputs} → ${recipe.output.quantity} ${resourceById.get(recipe.output.resource)?.label}`;
+}
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('#app not found');
 
 app.innerHTML = `
   <h1>Moteur — harnais de développement</h1>
-  <p>Pack: <strong>${pack.label}</strong> — tick <span id="tick-count">0</span></p>
+  <p>Pack: <strong>${pack.label}</strong> — argent: <strong id="money">0</strong> — tick <span id="tick-count">0</span></p>
   <div class="controls">
     <button id="toggle">Démarrer</button>
     <button id="speed-1">x1</button>
     <button id="speed-2">x2</button>
     <button id="speed-5">x5</button>
-    <button id="bump">+10 capacité export Tier I</button>
   </div>
-  <table id="flow-table">
+  <table id="buildings-table">
     <thead>
       <tr>
-        <th>Palier</th>
-        <th>Ressource importée</th>
-        <th>Besoin</th>
-        <th>Reçu</th>
-        <th>Efficacité</th>
-        <th>Sortie réelle</th>
+        <th>Bâtiment</th>
+        <th>Recette</th>
+        <th>Capacité</th>
+        <th>Produit (dernier tick)</th>
+        <th>Investir</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
 
-  <h2>Aperçu des tuiles</h2>
-  <p>Chaque ressource/palier sans sprite mappé retombe sur un placeholder coloré — dépose un pack dans <code>src/assets/themes/demo/</code> et complète <code>src/content/demo/assets.ts</code> pour les remplacer un par un.</p>
-  <div id="tile-preview" class="tile-row"></div>
+  <h2>Stocks</h2>
+  <p>Chaque ressource sans sprite mappé retombe sur un placeholder coloré — dépose un pack dans <code>src/assets/themes/demo/</code> et complète <code>src/content/demo/assets.ts</code> pour les remplacer un par un.</p>
+  <div id="stock-row" class="tile-row"></div>
 `;
 
-const tbody = app.querySelector('tbody')!;
+const moneyEl = app.querySelector('#money')!;
 const tickCountEl = app.querySelector('#tick-count')!;
+const buildingsBody = app.querySelector('#buildings-table tbody')!;
+const stockRow = app.querySelector<HTMLDivElement>('#stock-row')!;
 const toggleBtn = app.querySelector<HTMLButtonElement>('#toggle')!;
 
+let lastProduced: Record<string, number> = {};
+
 function render(tickCount = 0): void {
-  const results = resolveFlow(pack);
-  tbody.innerHTML = results
-    .map(
-      (r) => `
-      <tr>
-        <td>${tierLabelById.get(r.tierId)}</td>
-        <td>${r.importResource ? resourceLabelById.get(r.importResource) : '—'}</td>
-        <td>${r.need.toFixed(2)}</td>
-        <td>${r.received.toFixed(2)}</td>
-        <td>${(r.efficiency * 100).toFixed(1)}%</td>
-        <td>${r.exportRate.toFixed(2)}</td>
-      </tr>`,
-    )
-    .join('');
+  moneyEl.textContent = state.money.toFixed(2);
   tickCountEl.textContent = String(tickCount);
+
+  buildingsBody.innerHTML = '';
+  for (const building of state.buildings) {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${building.label}</td>
+      <td>${formatRecipe(building.recipe)}</td>
+      <td>${building.capacity.toFixed(2)}</td>
+      <td>${(lastProduced[building.id] ?? 0).toFixed(2)}</td>
+      <td></td>
+    `;
+    const investBtn = document.createElement('button');
+    investBtn.textContent = `+1 (coût ${building.capacityCost})`;
+    investBtn.addEventListener('click', () => {
+      invest(state, building.id, 1);
+      render(tickCount);
+    });
+    row.lastElementChild!.appendChild(investBtn);
+    buildingsBody.appendChild(row);
+  }
+
+  stockRow.innerHTML = '';
+  for (const resource of pack.resources) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'stock-item';
+    wrapper.appendChild(renderTile(demoThemeAssets, resource.id, resource.label));
+    const qty = document.createElement('span');
+    qty.textContent = (state.stocks[resource.id] ?? 0).toFixed(1);
+    wrapper.appendChild(qty);
+    stockRow.appendChild(wrapper);
+  }
 }
 
-const loop = new GameLoop((_delta, tickCount) => render(tickCount), 1000);
+const loop = new GameLoop((_delta, tickCount) => {
+  lastProduced = tick(pack, state).produced;
+  render(tickCount);
+}, 1000);
 
 toggleBtn.addEventListener('click', () => {
   if (loop.isRunning) {
@@ -84,16 +114,5 @@ toggleBtn.addEventListener('click', () => {
 app.querySelector('#speed-1')!.addEventListener('click', () => loop.setSpeed(1));
 app.querySelector('#speed-2')!.addEventListener('click', () => loop.setSpeed(2));
 app.querySelector('#speed-5')!.addEventListener('click', () => loop.setSpeed(5));
-
-app.querySelector('#bump')!.addEventListener('click', () => {
-  const exportRecipe = pack.recipes.find((r) => r.id === 't1-export');
-  if (exportRecipe) exportRecipe.capacity += 10;
-  render();
-});
-
-const tilePreview = app.querySelector<HTMLDivElement>('#tile-preview')!;
-for (const resource of pack.resources) {
-  tilePreview.appendChild(renderTile(demoThemeAssets, resource.id, resource.label));
-}
 
 render();

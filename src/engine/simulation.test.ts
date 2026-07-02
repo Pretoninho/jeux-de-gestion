@@ -1,85 +1,125 @@
 import { describe, expect, it } from 'vitest';
-import { resolveFlow } from './simulation';
-import { demoPack } from '../content/demo';
+import { createInitialState, invest, tick } from './simulation';
 import type { ContentPack } from './types';
 
-describe('resolveFlow', () => {
-  it('reproduces the worked example: tier-1 unconstrained, tier-2 throttled, tier-3 saturated', () => {
-    const [t1, t2, t3] = resolveFlow(demoPack);
+function packWithBuildings(overrides: Partial<ContentPack> = {}): ContentPack {
+  return {
+    id: 'test',
+    label: 'test',
+    resources: [
+      { id: 'wood', label: 'Wood' },
+      { id: 'planks', label: 'Planks' },
+      { id: 'furniture', label: 'Furniture', sellPrice: 10 },
+    ],
+    recipes: [
+      { id: 'extract-wood', inputs: [], output: { resource: 'wood', quantity: 1 } },
+      { id: 'make-planks', inputs: [{ resource: 'wood', quantity: 2 }], output: { resource: 'planks', quantity: 1 } },
+      { id: 'make-furniture', inputs: [{ resource: 'planks', quantity: 1 }], output: { resource: 'furniture', quantity: 1 } },
+    ],
+    buildings: [],
+    ...overrides,
+  };
+}
 
-    expect(t1.efficiency).toBe(1);
-    expect(t1.exportRate).toBe(50);
-
-    expect(t2.need).toBeCloseTo(60);
-    expect(t2.received).toBe(50);
-    expect(t2.efficiency).toBeCloseTo(50 / 60);
-    expect(t2.exportRate).toBeCloseTo(50 / 3);
-
-    expect(t3.need).toBeCloseTo(15);
-    expect(t3.received).toBeCloseTo(50 / 3);
-    expect(t3.efficiency).toBe(1);
-    expect(t3.exportRate).toBe(12);
+describe('tick', () => {
+  it('produces at full capacity when a recipe has no inputs', () => {
+    const pack = packWithBuildings({
+      buildings: [{ id: 'lumberjack', label: 'Lumberjack', recipe: 'extract-wood', capacity: 10, capacityCost: 5 }],
+    });
+    const state = createInitialState(pack);
+    const result = tick(pack, state);
+    expect(result.produced['lumberjack']).toBe(10);
+    expect(state.stocks['wood']).toBe(10);
   });
 
-  it('never lets efficiency exceed 1 even when supply outstrips demand', () => {
-    const pack: ContentPack = {
-      id: 'test-surplus',
-      label: 'surplus',
-      resources: [
-        { id: 'raw', label: 'raw' },
-        { id: 'a-good', label: 'a good' },
-        { id: 'b-good', label: 'b good' },
-      ],
-      tiers: [
-        { id: 'a', order: 0, label: 'A', exportRecipe: 'a-export' },
-        { id: 'b', order: 1, label: 'B', exportRecipe: 'b-export' },
-      ],
+  it('throttles production to what available stock allows', () => {
+    const pack = packWithBuildings({
+      buildings: [{ id: 'sawmill', label: 'Sawmill', recipe: 'make-planks', capacity: 3, capacityCost: 8 }],
+    });
+    const state = createInitialState(pack);
+    state.stocks['wood'] = 4;
+    const result = tick(pack, state);
+    // wants 2 wood/unit, capacity 3 -> would need 6, only 4 available -> 2 units
+    expect(result.produced['sawmill']).toBe(2);
+    expect(state.stocks['wood']).toBe(0);
+    expect(state.stocks['planks']).toBe(2);
+  });
+
+  it('produces a fractional amount when stock only covers part of a unit', () => {
+    const pack = packWithBuildings({
+      buildings: [{ id: 'sawmill', label: 'Sawmill', recipe: 'make-planks', capacity: 3, capacityCost: 8 }],
+    });
+    const state = createInitialState(pack);
+    state.stocks['wood'] = 1;
+    const result = tick(pack, state);
+    expect(result.produced['sawmill']).toBe(0.5);
+    expect(state.stocks['wood']).toBe(0);
+  });
+
+  it('produces exactly zero with no stock at all', () => {
+    const pack = packWithBuildings({
+      buildings: [{ id: 'sawmill', label: 'Sawmill', recipe: 'make-planks', capacity: 3, capacityCost: 8 }],
+    });
+    const state = createInitialState(pack);
+    const result = tick(pack, state);
+    expect(result.produced['sawmill']).toBe(0);
+  });
+
+  it('auto-sells resources with a sellPrice and resets their stock to zero', () => {
+    const pack = packWithBuildings({
+      buildings: [{ id: 'workshop', label: 'Workshop', recipe: 'make-furniture', capacity: 10, capacityCost: 12 }],
+    });
+    const state = createInitialState(pack);
+    state.stocks['planks'] = 5;
+    const result = tick(pack, state);
+    expect(result.produced['workshop']).toBe(5);
+    expect(result.revenue).toBe(50);
+    expect(state.money).toBe(50);
+    expect(state.stocks['furniture']).toBe(0);
+  });
+
+  it('lets an earlier building starve a later one competing for the same input', () => {
+    const pack = packWithBuildings({
       recipes: [
-        {
-          id: 'a-export',
-          tier: 'a',
-          inputs: [{ resource: 'raw', quantity: 1 }],
-          output: { resource: 'a-good', quantity: 1 },
-          capacity: 1000,
-        },
-        {
-          id: 'b-export',
-          tier: 'b',
-          inputs: [{ resource: 'a-good', quantity: 1 }],
-          output: { resource: 'b-good', quantity: 1 },
-          capacity: 5,
-        },
+        { id: 'make-planks', inputs: [{ resource: 'wood', quantity: 1 }], output: { resource: 'planks', quantity: 1 } },
+        { id: 'make-planks-2', inputs: [{ resource: 'wood', quantity: 1 }], output: { resource: 'planks', quantity: 1 } },
       ],
-    };
+      buildings: [
+        { id: 'sawmill-a', label: 'A', recipe: 'make-planks', capacity: 10, capacityCost: 8 },
+        { id: 'sawmill-b', label: 'B', recipe: 'make-planks-2', capacity: 10, capacityCost: 8 },
+      ],
+    });
+    const state = createInitialState(pack);
+    state.stocks['wood'] = 5;
+    const result = tick(pack, state);
+    expect(result.produced['sawmill-a']).toBe(5);
+    expect(result.produced['sawmill-b']).toBe(0);
+  });
+});
 
-    const [, b] = resolveFlow(pack);
-    expect(b.efficiency).toBe(1);
-    expect(b.exportRate).toBe(5);
+describe('invest', () => {
+  const pack = packWithBuildings({
+    buildings: [{ id: 'lumberjack', label: 'Lumberjack', recipe: 'extract-wood', capacity: 10, capacityCost: 5 }],
   });
 
-  it('scales to an arbitrary number of tiers, not just 3', () => {
-    const pack: ContentPack = {
-      id: 'test-n-tiers',
-      label: 'n-tiers',
-      resources: Array.from({ length: 6 }, (_, i) => ({ id: `good-${i}`, label: `good ${i}` })),
-      tiers: Array.from({ length: 5 }, (_, i) => ({
-        id: `tier-${i}`,
-        order: i,
-        label: `Tier ${i}`,
-        exportRecipe: `export-${i}`,
-      })),
-      recipes: Array.from({ length: 5 }, (_, i) => ({
-        id: `export-${i}`,
-        tier: `tier-${i}`,
-        inputs: i === 0 ? [] : [{ resource: `good-${i - 1}`, quantity: 1 }],
-        output: { resource: `good-${i}`, quantity: 1 },
-        capacity: 10 - i,
-      })),
-    };
+  it('adds capacity when affordable', () => {
+    const state = createInitialState(pack, 50);
+    const added = invest(state, 'lumberjack', 4);
+    expect(added).toBe(4);
+    expect(state.money).toBe(30);
+    expect(state.buildings.find((b) => b.id === 'lumberjack')?.capacity).toBe(14);
+  });
 
-    const results = resolveFlow(pack);
-    expect(results).toHaveLength(5);
-    expect(results[0].exportRate).toBe(10);
-    expect(results[4].exportRate).toBe(6);
+  it('caps the increase at what money can afford', () => {
+    const state = createInitialState(pack, 12);
+    const added = invest(state, 'lumberjack', 10);
+    expect(added).toBeCloseTo(2.4);
+    expect(state.money).toBeCloseTo(0);
+  });
+
+  it('does not touch the immutable pack definition', () => {
+    const state = createInitialState(pack, 100);
+    invest(state, 'lumberjack', 5);
+    expect(pack.buildings.find((b) => b.id === 'lumberjack')?.capacity).toBe(10);
   });
 });

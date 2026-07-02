@@ -44,3 +44,15 @@ td {
 .tile--placeholder {
   outline: 1px dashed rgba(0, 0, 0, 0.25);
 }
+
+.stock-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 13px;
+}
+
+#buildings-table button {
+  font-size: 12px;
+}

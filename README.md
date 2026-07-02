@@ -9,8 +9,8 @@ Le projet sépare strictement le **moteur** (simulation) de la **présentation**
 ```
 src/
   engine/         moteur : aucune dépendance UI, aucun a priori de thème
-    types.ts        types génériques : Resource, Recipe, Tier, ContentPack
-    simulation.ts    resolveFlow() : calcule le goulot d'étranglement entre paliers
+    types.ts        types génériques : Resource, Recipe, Building, ContentPack
+    simulation.ts    tick() : production/stocks/vente, invest() : achète de la capacité
     gameLoop.ts      boucle temps réel : pause, vitesse x1/x2/x5
   presentation/   couche visuelle générique, ignorée par le moteur
     assets.ts        types ThemeAssets / SpriteRef (mapping id moteur -> sprite)
@@ -23,30 +23,25 @@ src/
   main.ts           harnais de développement (pas l'UI finale)
 ```
 
-### Le moteur de flux (`resolveFlow`)
+### Le moteur de production (`tick`)
 
-Le jeu est structuré en **N paliers** (configurable, pas figé à 3) reliés par un flux continu — pas de reset ni de "pont" entre paliers, chaque palier tourne en permanence. Chaque palier :
+Économie à **une seule échelle** — pas de paliers empilés, la profondeur vient d'ajouter des bâtiments/recettes, pas de changer d'ordre de grandeur. Chaque `Building` a une recette (graphe de recettes libre, pas de patron imposé) et une capacité (unités/tick à pleine cadence).
 
-- consomme des ressources brutes et des recettes internes librement définies (graphe de recettes libre, pas de patron imposé par le moteur) ;
-- exporte une ressource vers le palier suivant, potentiellement consommée à plusieurs endroits du palier suivant.
-
-Le débit reçu du palier précédent plafonne (jamais au-delà) la production réelle du palier suivant :
+À chaque tick, chaque bâtiment produit en fonction du stock disponible de ses ressources d'entrée :
 
 ```
-Besoin(N+1)     = Σ des besoins de toutes les recettes de N+1 qui consomment l'export de N
-Efficacité(N+1) = min(1, Débit_reçu_de_N / Besoin(N+1))
-Sortie_réelle   = Capacité_construite × Efficacité
+unités_produites = min(capacité, min sur chaque input de stock_disponible / quantité_requise)
 ```
 
-Le déficit d'un palier ne se propage pas automatiquement : bien dimensionner la capacité d'un palier par rapport au flux qu'il reçoit reste un arbitrage actif du joueur jusqu'en fin de partie. Voir `src/engine/simulation.test.ts` pour l'exemple chiffré de référence.
+Les ressources marquées `sellPrice` sont vendues automatiquement en fin de tick (stock converti en argent, remis à zéro). L'argent sert à agrandir la capacité d'un bâtiment via `invest()`. Les bâtiments sont traités dans l'ordre du tableau : un bâtiment antérieur peut affamer un bâtiment plus tardif qui consomme la même ressource — limitation connue et acceptée pour une économie à une seule échelle, pas un bug. Voir `src/engine/simulation.test.ts` pour les cas couverts.
 
 ### Contenu vs moteur
 
-Un thème (univers spatial, civilisation antique, biologie cellulaire, entreprise...) s'exprime entièrement comme un `ContentPack` : liste de ressources, paliers et recettes, sans toucher au moteur. Le pack `demo` utilise des noms neutres pour garantir que le moteur ne dépend d'aucun thème particulier.
+Un thème (urbain, entreprise, colonie...) s'exprime entièrement comme un `ContentPack` : liste de ressources, recettes et bâtiments de départ, sans toucher au moteur. Le pack `demo` utilise une petite économie bois/pierre → planches/briques → meuble, encore générique en attendant un thème définitif.
 
 ### Assets visuels
 
-Un id moteur (`Resource.id`, `Tier.id`, `Recipe.id`) n'a pas de sprite par défaut : `renderTile()` retombe sur un carré coloré placeholder tant qu'aucune entrée n'existe dans le `ThemeAssets` du thème actif. Pour intégrer un pack d'assets (ex. itch.io) :
+Un id moteur (`Resource.id`, `Recipe.id`, `Building.id`) n'a pas de sprite par défaut : `renderTile()` retombe sur un carré coloré placeholder tant qu'aucune entrée n'existe dans le `ThemeAssets` du thème actif. Pour intégrer un pack d'assets (ex. itch.io) :
 
 1. Déposer les fichiers dans `src/assets/themes/<theme-id>/`.
 2. Ajouter les entrées correspondantes dans `src/content/<theme-id>/assets.ts`.
