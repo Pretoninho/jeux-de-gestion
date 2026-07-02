@@ -40,7 +40,11 @@ Pack `urban` (`src/content/urban/`, ex-`demo`, renommé), deux angles implément
 
 Les deux angles tournent en parallèle dans le même `tick()`, chacun avec son propre argent cumulé (`state.money` est partagé, alimenté par les deux ventes).
 
-**Mode de contrôle : tableau de bord (dashboard), PAS de grille spatiale.** Tranché — question ouverte depuis le document abandonné, jamais retranchée jusqu'ici. Raisonnement : une grille spatiale (placement de bâtiments, collisions, caméra) est un chantier bien plus lourd pour un solo dev, va à l'encontre du cap "jeu simple qui ne scale pas" tout juste adopté, et le harnais de dev actuel démontre déjà qu'un dashboard (tableau de bâtiments + stocks + boutons d'investissement) fonctionne bien pour cette boucle. `src/main.ts` reste un harnais de dev, pas l'UI finale, mais son modèle d'interaction (tableau, pas de carte) est la direction confirmée.
+**Mode de contrôle : REVIRÉ vers grille spatiale avec placement.** Historique : d'abord tranché "dashboard, pas de grille" (raisonnement : éviter le gros chantier caméra/collisions, cohérent avec "jeu simple qui ne scale pas"). En expliquant ce choix, la distinction n'a pas été assez claire : "dashboard" a été présenté comme "pas de carte à la Pharaoh" sans dire explicitement que ça supprimait *toute* mécanique de construction (même un simple bouton "construire" sans carte). L'utilisateur pensait donc que la construction/placement restait possible en mode dashboard — ce n'était pas le cas, d'où le revirement une fois le malentendu clarifié.
+
+**Décision actuelle** : vrai placement spatial sur une grille (le joueur clique une case pour y construire un bâtiment), pas juste un bouton d'achat sans carte. Reste à définir avant implémentation : taille de grille (probablement petite et fixe pour éviter caméra/scroll), empreinte des bâtiments (1x1 partout recommandé pour rester simple), rendu (`src/presentation/tile.ts` existe déjà pour une tuile isolée, il faut l'étendre à une grille composée).
+
+**Leçon retenue** : être explicite sur *toutes* les mécaniques qu'un choix élimine, pas seulement la plus évidente, avant de faire valider une décision structurante.
 
 **Contenu thématique : construit par angles successifs, ajoutés au même pack.** Un "angle" = une chaîne de ressources/recettes/bâtiments cohérente (ex. logistique, commerce). Comme l'économie est à une seule échelle, ajouter un angle ne modifie jamais le moteur — juste de nouvelles entrées dans les tableaux `resources`/`recipes`/`buildings` du pack. Convention : préfixer les ids de ressources/recettes/bâtiments par angle (`logi-...`) pour éviter les collisions quand plusieurs angles cohabiteront dans le même pack.
 
@@ -111,6 +115,7 @@ CREDITS.md                                  licences des assets externes
 ## Prochaines étapes envisagées (non décidées)
 
 - Ajouter d'autres angles thématiques au pack `urban` (artisanat/mobilier, construction/BTP, espaces verts, mobilité — voir feuille de route dans "Concept de jeu actuel"; logistique et commerce sont déjà implémentés) ; extraire de nouvelles tuiles du pack RPG Urban Kit au besoin.
-- Faire évoluer `src/main.ts` du harnais de dev vers une vraie UI dashboard (mode de contrôle désormais tranché, voir section "Concept de jeu actuel").
+- Concevoir et implémenter la grille spatiale + placement (voir section "Concept de jeu actuel" pour l'état de la décision) — remplace l'évolution vers une UI dashboard pure, envisagée puis abandonnée avec ce revirement.
+- Une maquette dashboard (cartes par bâtiment, sections par angle) a été produite avant ce revirement — voir historique de conversation ; probablement à retravailler pour une disposition en grille plutôt qu'en cartes.
 - Enrichir le moteur (plusieurs biens vendables, événements aléatoires, coûts de capacité progressifs...) une fois plusieurs angles en place.
 - Éventuellement revoir l'ordre de traitement des bâtiments dans `tick()` (actuellement premier arrivé = premier servi) si ça devient un vrai problème d'équilibrage plutôt qu'un détail.
