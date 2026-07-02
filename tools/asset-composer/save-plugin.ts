@@ -20,6 +20,22 @@ interface Mapping {
   layers: { kit: string; file: string }[];
 }
 
+const UNCATEGORIZED = 'non-categorise';
+
+function categoriesPath(kit: string): string {
+  return resolve(TILES_LIBRARY_DIR, kit, 'categories.json');
+}
+
+function readCategories(kit: string): Record<string, string> {
+  const path = categoriesPath(kit);
+  if (!existsSync(path)) return {};
+  try {
+    return JSON.parse(readFileSync(path, 'utf-8')) as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
 /** Lowercase alphanumeric + hyphens only — this becomes a directory name on disk. */
 function sanitizeKitId(raw: string): string {
   const slug = raw
@@ -93,25 +109,52 @@ export function assetComposerSavePlugin(): Plugin {
   return {
     name: 'asset-composer-save',
     configureServer(server) {
-      // List every kit (subfolder of tools/asset-composer/tiles/) and its files.
+      // List every kit (subfolder of tools/asset-composer/tiles/), its files, and their categories.
       server.middlewares.use('/__asset-composer/kits', (req, res) => {
         if (req.method !== 'GET') {
           res.statusCode = 405;
           res.end('Method not allowed');
           return;
         }
-        const kits: Record<string, string[]> = {};
+        const kits: Record<string, { files: string[]; categories: Record<string, string> }> = {};
         if (existsSync(TILES_LIBRARY_DIR)) {
           for (const entry of readdirSync(TILES_LIBRARY_DIR, { withFileTypes: true })) {
             if (!entry.isDirectory()) continue;
             const kitDir = resolve(TILES_LIBRARY_DIR, entry.name);
-            kits[entry.name] = readdirSync(kitDir)
+            const files = readdirSync(kitDir)
               .filter((f) => f.toLowerCase().endsWith('.png'))
               .sort();
+            const rawCategories = readCategories(entry.name);
+            const categories: Record<string, string> = {};
+            for (const file of files) categories[file] = rawCategories[file] ?? UNCATEGORIZED;
+            kits[entry.name] = { files, categories };
           }
         }
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({ kits }));
+      });
+
+      // Reassign a tile's category (creates/updates tiles/<kit>/categories.json).
+      server.middlewares.use('/__asset-composer/recategorize', (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          res.end('Method not allowed');
+          return;
+        }
+        readJsonBody<{ kit: string; file: string; category: string }>(req)
+          .then(({ kit, file, category }) => {
+            if (!kit || !file || !category) throw new Error('kit, file and category are required');
+            const categories = readCategories(kit);
+            categories[file] = category;
+            writeFileSync(categoriesPath(kit), JSON.stringify(categories, null, 2), 'utf-8');
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ ok: true }));
+          })
+          .catch((err) => {
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : String(err) }));
+          });
       });
 
       // Upload a new kit: multipart/form-data with a `kitId` field and one or more `files`.

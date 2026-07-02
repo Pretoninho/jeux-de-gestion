@@ -11,10 +11,31 @@ interface PendingMapping {
   layers: LayerRef[];
 }
 
-let kits: Record<string, string[]> = {};
+interface KitData {
+  files: string[];
+  categories: Record<string, string>;
+}
+
+const KNOWN_CATEGORIES = [
+  'sol',
+  'eau',
+  'mur-porte',
+  'nature',
+  'personnage',
+  'vehicule',
+  'mobilier',
+  'outil-objet',
+  'feu-lumiere',
+  'non-categorise',
+];
+
+let kits: Record<string, KitData> = {};
 let currentLayers: LayerRef[] = [];
 const pendingMappings: PendingMapping[] = [];
 let filterText = '';
+let activeCategory: string | null = null;
+let categorizeMode = false;
+let categorizingTarget: LayerRef | null = null;
 
 const knownIds = [...urbanPack.resources.map((r) => r.id), ...urbanPack.buildingTypes.map((t) => t.id)];
 
@@ -50,7 +71,17 @@ app.innerHTML = `
 
   <section>
     <h2>Tuiles disponibles</h2>
-    <input id="filter" type="text" placeholder="filtrer par nom de fichier..." />
+    <div class="row">
+      <input id="filter" type="text" placeholder="filtrer par nom de fichier..." />
+      <button id="toggle-categorize">Mode catégorisation : OFF</button>
+    </div>
+    <div id="category-chips" class="chips"></div>
+    <div id="recategorize-panel" class="recategorize-panel" hidden>
+      <span id="recategorize-target"></span>
+      <select id="recategorize-select"></select>
+      <button id="recategorize-save">Enregistrer la catégorie</button>
+      <button id="recategorize-cancel">Annuler</button>
+    </div>
     <div id="tile-browser"></div>
   </section>
 
@@ -83,6 +114,11 @@ app.innerHTML = `
 
 const tileBrowserEl = app.querySelector<HTMLDivElement>('#tile-browser')!;
 const filterEl = app.querySelector<HTMLInputElement>('#filter')!;
+const categoryChipsEl = app.querySelector<HTMLDivElement>('#category-chips')!;
+const toggleCategorizeBtn = app.querySelector<HTMLButtonElement>('#toggle-categorize')!;
+const recategorizePanelEl = app.querySelector<HTMLDivElement>('#recategorize-panel')!;
+const recategorizeTargetEl = app.querySelector<HTMLSpanElement>('#recategorize-target')!;
+const recategorizeSelectEl = app.querySelector<HTMLSelectElement>('#recategorize-select')!;
 const previewEl = app.querySelector<HTMLDivElement>('#preview')!;
 const layerStackEl = app.querySelector<HTMLDivElement>('#layer-stack')!;
 const mappingIdEl = app.querySelector<HTMLInputElement>('#mapping-id')!;
@@ -92,22 +128,58 @@ const kitNameEl = app.querySelector<HTMLInputElement>('#kit-name')!;
 const kitFilesEl = app.querySelector<HTMLInputElement>('#kit-files')!;
 const kitUploadStatusEl = app.querySelector<HTMLSpanElement>('#kit-upload-status')!;
 
+recategorizeSelectEl.innerHTML = KNOWN_CATEGORIES.map((c) => `<option value="${c}">${c}</option>`).join('');
+
 async function loadKits(): Promise<void> {
   const res = await fetch('/__asset-composer/kits');
-  const data = (await res.json()) as { kits: Record<string, string[]> };
+  const data = (await res.json()) as { kits: Record<string, KitData> };
   kits = data.kits;
+  renderCategoryChips();
   renderTileBrowser();
+}
+
+function allCategoriesPresent(): string[] {
+  const set = new Set<string>();
+  for (const kit of Object.values(kits)) for (const cat of Object.values(kit.categories)) set.add(cat);
+  return KNOWN_CATEGORIES.filter((c) => set.has(c));
+}
+
+function renderCategoryChips(): void {
+  categoryChipsEl.innerHTML = '';
+  for (const cat of allCategoriesPresent()) {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    if (cat === activeCategory) chip.classList.add('chip--active');
+    chip.textContent = cat;
+    chip.addEventListener('click', () => {
+      activeCategory = activeCategory === cat ? null : cat;
+      renderCategoryChips();
+      renderTileBrowser();
+    });
+    categoryChipsEl.appendChild(chip);
+  }
+}
+
+function openRecategorizePanel(ref: LayerRef): void {
+  categorizingTarget = ref;
+  recategorizeTargetEl.textContent = `${ref.kit}/${ref.file} — catégorie actuelle : ${kits[ref.kit]?.categories[ref.file] ?? '?'}`;
+  recategorizeSelectEl.value = kits[ref.kit]?.categories[ref.file] ?? 'non-categorise';
+  recategorizePanelEl.hidden = false;
 }
 
 function renderTileBrowser(): void {
   tileBrowserEl.innerHTML = '';
   const needle = filterText.trim().toLowerCase();
-  for (const [kit, files] of Object.entries(kits)) {
-    const visible = needle ? files.filter((f) => f.toLowerCase().includes(needle)) : files;
+  for (const [kit, data] of Object.entries(kits)) {
+    const visible = data.files.filter((f) => {
+      if (needle && !f.toLowerCase().includes(needle)) return false;
+      if (activeCategory && data.categories[f] !== activeCategory) return false;
+      return true;
+    });
     if (visible.length === 0) continue;
 
     const heading = document.createElement('h3');
-    heading.textContent = `${kit} (${visible.length}/${files.length})`;
+    heading.textContent = `${kit} (${visible.length}/${data.files.length})`;
     tileBrowserEl.appendChild(heading);
 
     const grid = document.createElement('div');
@@ -115,11 +187,15 @@ function renderTileBrowser(): void {
     for (const file of visible) {
       const btn = document.createElement('button');
       btn.className = 'tile-btn';
-      btn.title = file;
+      btn.title = `${file} [${data.categories[file]}]`;
       btn.style.backgroundImage = `url(${tileUrl({ kit, file })})`;
       btn.addEventListener('click', () => {
-        currentLayers.push({ kit, file });
-        renderComposition();
+        if (categorizeMode) {
+          openRecategorizePanel({ kit, file });
+        } else {
+          currentLayers.push({ kit, file });
+          renderComposition();
+        }
       });
       grid.appendChild(btn);
     }
@@ -209,6 +285,42 @@ function renderPendingTable(): void {
 filterEl.addEventListener('input', () => {
   filterText = filterEl.value;
   renderTileBrowser();
+});
+
+toggleCategorizeBtn.addEventListener('click', () => {
+  categorizeMode = !categorizeMode;
+  toggleCategorizeBtn.textContent = `Mode catégorisation : ${categorizeMode ? 'ON' : 'OFF'}`;
+  toggleCategorizeBtn.classList.toggle('chip--active', categorizeMode);
+  if (!categorizeMode) recategorizePanelEl.hidden = true;
+});
+
+app.querySelector('#recategorize-cancel')!.addEventListener('click', () => {
+  recategorizePanelEl.hidden = true;
+  categorizingTarget = null;
+});
+
+app.querySelector('#recategorize-save')!.addEventListener('click', () => {
+  (async () => {
+    if (!categorizingTarget) return;
+    const category = recategorizeSelectEl.value;
+    const res = await fetch('/__asset-composer/recategorize', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ kit: categorizingTarget.kit, file: categorizingTarget.file, category }),
+    });
+    const data = (await res.json()) as { ok: boolean; error?: string };
+    if (data.ok) {
+      kits[categorizingTarget.kit].categories[categorizingTarget.file] = category;
+      recategorizePanelEl.hidden = true;
+      categorizingTarget = null;
+      renderCategoryChips();
+      renderTileBrowser();
+    } else {
+      window.alert(`Erreur : ${data.error}`);
+    }
+  })().catch((err) => {
+    window.alert(`Erreur : ${err instanceof Error ? err.message : String(err)}`);
+  });
 });
 
 app.querySelector('#clear-layers')!.addEventListener('click', () => {

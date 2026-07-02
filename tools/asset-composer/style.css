@@ -151,3 +151,42 @@ td {
   font-size: 12px;
   color: #555;
 }
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-bottom: 0.6rem;
+}
+
+.chip {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid #999;
+  border-radius: 100px;
+  background: #f5f5f5;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.chip--active {
+  background: #5b8dff;
+  border-color: #5b8dff;
+  color: white;
+}
+
+.recategorize-panel {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  background: #fff8e1;
+  border: 1px solid #e0c060;
+  border-radius: 6px;
+  padding: 0.5rem;
+  margin-bottom: 0.6rem;
+  font-size: 12px;
+}
+
+.recategorize-panel[hidden] {
+  display: none;
+}
