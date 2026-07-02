@@ -36,7 +36,9 @@ Remplace la structure à paliers du document de passation (voir section suivante
 
 Pack `demo` actuel (encore générique, sert à valider le moteur) : Bois/Pierre (bruts) → Planches/Briques (intermédiaires) → Meuble (bien vendu). 5 bâtiments : Lumberjack, Quarry, Sawmill, Brickworks, Workshop. Capacités volontairement déséquilibrées (Workshop capacité 6 mais Brickworks ne fournit que 3 briques/tick) pour garder vivant l'arbitrage capacité/flux qui faisait l'intérêt des paliers, même à une seule échelle.
 
-**Non tranché** : mode de contrôle (grille spatiale / dashboard / automatisation — question ouverte depuis le document abandonné, jamais retranchée) ; palette de ressources/recettes définitive pour le thème urbain/proche-futur (le pack `demo` reste un brouillon mécanique, pas le contenu final) ; renommer le pack `demo` en pack thématique définitif.
+**Mode de contrôle : tableau de bord (dashboard), PAS de grille spatiale.** Tranché — question ouverte depuis le document abandonné, jamais retranchée jusqu'ici. Raisonnement : une grille spatiale (placement de bâtiments, collisions, caméra) est un chantier bien plus lourd pour un solo dev, va à l'encontre du cap "jeu simple qui ne scale pas" tout juste adopté, et le harnais de dev actuel démontre déjà qu'un dashboard (tableau de bâtiments + stocks + boutons d'investissement) fonctionne bien pour cette boucle. `src/main.ts` reste un harnais de dev, pas l'UI finale, mais son modèle d'interaction (tableau, pas de carte) est la direction confirmée.
+
+**Non tranché** : palette de ressources/recettes définitive pour le thème urbain/proche-futur (le pack `demo` reste un brouillon mécanique, pas le contenu final) ; renommer le pack `demo` en pack thématique définitif.
 
 ## Concept de jeu — document de passation (ABANDONNÉ, gardé pour mémoire)
 
@@ -92,6 +94,6 @@ CREDITS.md                                  licences des assets externes
 ## Prochaines étapes envisagées (non décidées)
 
 - Renommer le pack `demo` en pack thématique définitif (urbain/proche-futur) et redéfinir ses ressources/recettes pour coller au thème plutôt qu'au brouillon mécanique actuel (bois/pierre/meuble).
-- Trancher le mode de contrôle (grille spatiale / dashboard / automatisation) — question ouverte jamais retranchée depuis le document abandonné.
+- Faire évoluer `src/main.ts` du harnais de dev vers une vraie UI dashboard (mode de contrôle désormais tranché, voir section "Concept de jeu actuel").
 - Enrichir le moteur (plusieurs biens vendables, événements aléatoires, coûts de capacité progressifs...) une fois le contenu thématique posé.
 - Éventuellement revoir l'ordre de traitement des bâtiments dans `tick()` (actuellement premier arrivé = premier servi) si ça devient un vrai problème d'équilibrage plutôt qu'un détail.
