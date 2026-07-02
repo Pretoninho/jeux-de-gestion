@@ -6,7 +6,7 @@ Ce fichier résume tout ce qui a été discuté et décidé jusqu'ici, pour repr
 
 Jeu de gestion solo, gratuit, déployé sur GitHub Pages (frontend uniquement, pas de backend).
 
-**Thème : urbain / proche-futur.** Historique des revirements, du plus récent au plus ancien : sci-fi (trop peu d'assets fiables trouvés, cf. section Assets) → pivot vers un thème urbain/proche-futur pour exploiter à fond le pack Kenney RPG Urban Kit déjà intégré (riche, vérifié, CC0) plutôt que d'assembler des packs sci-fi plus faibles. Le thème définitif n'est pas encore intégré dans le code (le pack de contenu s'appelle toujours `demo`).
+**Thème : urbain / proche-futur.** Historique des revirements, du plus récent au plus ancien : sci-fi (trop peu d'assets fiables trouvés, cf. section Assets) → pivot vers un thème urbain/proche-futur pour exploiter à fond le pack Kenney RPG Urban Kit déjà intégré (riche, vérifié, CC0) plutôt que d'assembler des packs sci-fi plus faibles. Le pack de contenu s'appelle maintenant `urban` (`src/content/urban/`) ; premier angle thématique (logistique) implémenté, voir section "Concept de jeu actuel".
 
 **Structure du jeu : à une seule échelle, PAS de paliers empilés.** Revirement majeur, acté et implémenté : la structure à N paliers d'échelle croissante du document de passation (`docs/jeu_gestion_paliers_passation.md`) a été **abandonnée** — l'utilisateur veut "un jeu simple qui ne scale pas". Remplacée par une économie à une seule échelle : bâtiments avec recette + capacité, stocks de ressources, vente automatique des biens finis, réinvestissement dans la capacité (voir section "Décisions d'architecture actées").
 
@@ -34,11 +34,24 @@ Jeu de gestion solo, gratuit, déployé sur GitHub Pages (frontend uniquement, p
 
 Remplace la structure à paliers du document de passation (voir section suivante). Bâtiments = recette (graphe libre d'inputs/outputs) + capacité ; stocks de ressources ; ressources marquées `sellPrice` vendues automatiquement chaque tick ; argent réinvesti dans la capacité des bâtiments via `invest()`. La profondeur vient d'ajouter des recettes/bâtiments à ce même niveau, pas de changer d'échelle.
 
-Pack `demo` actuel (encore générique, sert à valider le moteur) : Bois/Pierre (bruts) → Planches/Briques (intermédiaires) → Meuble (bien vendu). 5 bâtiments : Lumberjack, Quarry, Sawmill, Brickworks, Workshop. Capacités volontairement déséquilibrées (Workshop capacité 6 mais Brickworks ne fournit que 3 briques/tick) pour garder vivant l'arbitrage capacité/flux qui faisait l'intérêt des paliers, même à une seule échelle.
+Pack `urban` (`src/content/urban/`, ex-`demo`, renommé) : premier angle **logistique** implémenté — Ferraille/Matériaux (bruts) → Pièces détachées/Emballages (intermédiaires) → Colis livré (bien vendu). 5 bâtiments : Casse auto, Entrepôt, Atelier de réparation, Centre d'emballage, Centre de livraison. Capacités volontairement déséquilibrées (Centre de livraison capacité 6 mais Centre d'emballage ne fournit que 3 emballages/tick) pour garder vivant l'arbitrage capacité/flux qui faisait l'intérêt des paliers, même à une seule échelle. Ids préfixés `logi-` pour laisser la place à d'autres angles dans le même pack.
 
 **Mode de contrôle : tableau de bord (dashboard), PAS de grille spatiale.** Tranché — question ouverte depuis le document abandonné, jamais retranchée jusqu'ici. Raisonnement : une grille spatiale (placement de bâtiments, collisions, caméra) est un chantier bien plus lourd pour un solo dev, va à l'encontre du cap "jeu simple qui ne scale pas" tout juste adopté, et le harnais de dev actuel démontre déjà qu'un dashboard (tableau de bâtiments + stocks + boutons d'investissement) fonctionne bien pour cette boucle. `src/main.ts` reste un harnais de dev, pas l'UI finale, mais son modèle d'interaction (tableau, pas de carte) est la direction confirmée.
 
-**Non tranché** : palette de ressources/recettes définitive pour le thème urbain/proche-futur (le pack `demo` reste un brouillon mécanique, pas le contenu final) ; renommer le pack `demo` en pack thématique définitif.
+**Contenu thématique : construit par angles successifs, ajoutés au même pack.** Un "angle" = une chaîne de ressources/recettes/bâtiments cohérente (ex. logistique, commerce). Comme l'économie est à une seule échelle, ajouter un angle ne modifie jamais le moteur — juste de nouvelles entrées dans les tableaux `resources`/`recipes`/`buildings` du pack. Convention : préfixer les ids de ressources/recettes/bâtiments par angle (`logi-...`) pour éviter les collisions quand plusieurs angles cohabiteront dans le même pack.
+
+Feuille de route des angles (catalogués à partir du contenu réel de RPG Urban Kit — routes, façades de commerces, eau/fontaines, arbres, véhicules, personnages, caisses/coffres/outils/lampadaires/clôtures/torches) :
+
+| Angle | Statut | Ressources | Bâtiments | Sprites déjà en local |
+|---|---|---|---|---|
+| **Logistique** | **Implémenté** | Ferraille, Matériaux → Pièces détachées, Emballages → Colis livré (vendu) | Casse auto, Entrepôt, Atelier de réparation, Centre d'emballage, Centre de livraison | wrench, crate, greenCrate, truck (pièces détachées reste en placeholder, pas de bon sprite) |
+| Commerce de quartier | Non commencé | Marchandises → Vitrine garnie → Ventes | Grossiste, Boutique | façades de commerces pas encore extraites du pack |
+| Artisanat/mobilier | Non commencé | Bois, Tissu → Meuble brut → Meuble fini | Menuiserie, Atelier de finition | tree, greenCrate (à réattribuer si activé, actuellement utilisés par la logistique) |
+| Construction/BTP | Non commencé | Pierre, Métal → Briques, Structures → Chantier livré | Carrière, Fonderie, Chantier | brick |
+| Espaces verts/désirabilité | Non commencé | pas une chaîne de production — multiplicateur passif sur les ventes selon arbres/fontaines placés | — | tree, fontaine pas encore extraite |
+| Mobilité/transport | Non commencé | Carburant → Trajets effectués (taxi/livraison courte distance) | Garage, Station | truck, voitures pas encore extraites |
+
+Pack renommé `demo` → `urban` (dossiers `src/content/urban/` et `src/assets/themes/urban/`).
 
 ## Concept de jeu — document de passation (ABANDONNÉ, gardé pour mémoire)
 
@@ -56,7 +69,7 @@ Source : `docs/jeu_gestion_paliers_passation.md` (fourni par l'utilisateur, co-�
 
 ## Assets — état actuel
 
-**Intégré** : Kenney **RPG Urban Kit** (CC0, itch.io) — 9 tuiles copiées dans `src/assets/themes/demo/` au total ; après le passage à l'économie à une seule échelle, seules 4 sont actuellement référencées dans `src/content/demo/assets.ts` (bois→arbre, briques→brique, planches→caisse, meuble→caisse verte) ; `stone` (pierre) reste volontairement en placeholder, faute de sprite qui convienne, pour garder le chemin de repli visible. Les 5 fichiers non utilisés restent dans le dossier au cas où, sans être importés.
+**Intégré** : Kenney **RPG Urban Kit** (CC0, itch.io) — 9 tuiles dans `src/assets/themes/urban/` au total ; l'angle logistique en référence 4 dans `src/content/urban/assets.ts` (ferraille→wrench, matériaux→crate, emballages→greenCrate, colis livré→truck) ; `logi-parts` (pièces détachées) reste volontairement en placeholder, faute de sprite qui convienne. Les tuiles `brick`/`tree` restent en local mais non importées (récupérables pour un futur angle, ex. construction/artisanat).
 
 **Évalués pour le thème sci-fi (piste abandonnée, gardé pour mémoire si jamais reconsidérée)** :
 | Pack | Vérifié | Verdict |
@@ -83,8 +96,8 @@ Source : `docs/jeu_gestion_paliers_passation.md` (fourni par l'utilisateur, co-�
 src/engine/{types,simulation,gameLoop}.ts   moteur, zéro dépendance thème/UI
 src/engine/simulation.test.ts               valide tick()/invest() (9 tests)
 src/presentation/{assets,tile}.ts           rendu générique + fallback placeholder
-src/content/demo/{index,assets}.ts          pack de contenu (économie bois/pierre) + mapping sprites
-src/assets/themes/demo/                     fichiers image du pack demo
+src/content/urban/{index,assets}.ts         pack de contenu (angle logistique) + mapping sprites
+src/assets/themes/urban/                    fichiers image du pack urban
 src/main.ts                                 harnais de dev : tableau bâtiments + stocks (PAS l'UI finale)
 CREDITS.md                                  licences des assets externes
 .claude/settings.json                       permissions autonomes
@@ -93,7 +106,7 @@ CREDITS.md                                  licences des assets externes
 
 ## Prochaines étapes envisagées (non décidées)
 
-- Renommer le pack `demo` en pack thématique définitif (urbain/proche-futur) et redéfinir ses ressources/recettes pour coller au thème plutôt qu'au brouillon mécanique actuel (bois/pierre/meuble).
+- Ajouter d'autres angles thématiques au pack `urban` (commerce de quartier, artisanat/mobilier, construction/BTP, espaces verts, mobilité — voir feuille de route dans "Concept de jeu actuel") ; extraire de nouvelles tuiles du pack RPG Urban Kit au besoin.
 - Faire évoluer `src/main.ts` du harnais de dev vers une vraie UI dashboard (mode de contrôle désormais tranché, voir section "Concept de jeu actuel").
-- Enrichir le moteur (plusieurs biens vendables, événements aléatoires, coûts de capacité progressifs...) une fois le contenu thématique posé.
+- Enrichir le moteur (plusieurs biens vendables, événements aléatoires, coûts de capacité progressifs...) une fois plusieurs angles en place.
 - Éventuellement revoir l'ordre de traitement des bâtiments dans `tick()` (actuellement premier arrivé = premier servi) si ça devient un vrai problème d'équilibrage plutôt qu'un détail.

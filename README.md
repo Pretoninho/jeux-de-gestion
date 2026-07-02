@@ -16,8 +16,8 @@ src/
     assets.ts        types ThemeAssets / SpriteRef (mapping id moteur -> sprite)
     tile.ts           renderTile() : sprite si mappé, sinon placeholder coloré
   content/
-    demo/            pack de contenu neutre, sert à valider le moteur
-      assets.ts        mapping d'assets du thème demo (vide -> tout en placeholder)
+    urban/           pack thématique urbain/proche-futur, construit par angles successifs
+      assets.ts        mapping d'assets du thème urban
   assets/
     themes/<id>/     fichiers image par thème, voir assets/README.md
   main.ts           harnais de développement (pas l'UI finale)
@@ -37,7 +37,7 @@ Les ressources marquées `sellPrice` sont vendues automatiquement en fin de tick
 
 ### Contenu vs moteur
 
-Un thème (urbain, entreprise, colonie...) s'exprime entièrement comme un `ContentPack` : liste de ressources, recettes et bâtiments de départ, sans toucher au moteur. Le pack `demo` utilise une petite économie bois/pierre → planches/briques → meuble, encore générique en attendant un thème définitif.
+Un thème s'exprime entièrement comme un `ContentPack` : liste de ressources, recettes et bâtiments de départ, sans toucher au moteur. Le pack `urban` est construit par "angles" successifs (chaînes cohérentes ajoutées au même pack, ids préfixés par angle pour éviter les collisions) — le premier angle, logistique (`logi-*`), est implémenté ; d'autres angles possibles (commerce, artisanat...) peuvent s'ajouter sans toucher au moteur ni à l'existant.
 
 ### Assets visuels
 

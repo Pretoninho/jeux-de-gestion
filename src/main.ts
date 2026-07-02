@@ -1,16 +1,16 @@
 import { createInitialState, invest, tick } from './engine/simulation';
 import { GameLoop } from './engine/gameLoop';
-import { demoPack } from './content/demo';
-import { demoThemeAssets } from './content/demo/assets';
+import { urbanPack } from './content/urban';
+import { urbanThemeAssets } from './content/urban/assets';
 import { renderTile } from './presentation/tile';
 
 /**
- * This file is a throwaway dev harness proving the engine, the demo content
+ * This file is a throwaway dev harness proving the engine, the urban content
  * pack, and the game loop wire together end to end. It is not the real UI —
- * that comes later once a theme and a control mode are chosen.
+ * that comes later.
  */
 
-const pack = demoPack;
+const pack = urbanPack;
 const state = createInitialState(pack, 20);
 const resourceById = new Map(pack.resources.map((r) => [r.id, r]));
 const recipeById = new Map(pack.recipes.map((r) => [r.id, r]));
@@ -48,7 +48,7 @@ app.innerHTML = `
   </table>
 
   <h2>Stocks</h2>
-  <p>Chaque ressource sans sprite mappé retombe sur un placeholder coloré — dépose un pack dans <code>src/assets/themes/demo/</code> et complète <code>src/content/demo/assets.ts</code> pour les remplacer un par un.</p>
+  <p>Chaque ressource sans sprite mappé retombe sur un placeholder coloré — dépose un pack dans <code>src/assets/themes/urban/</code> et complète <code>src/content/urban/assets.ts</code> pour les remplacer un par un.</p>
   <div id="stock-row" class="tile-row"></div>
 `;
 
@@ -88,7 +88,7 @@ function render(tickCount = 0): void {
   for (const resource of pack.resources) {
     const wrapper = document.createElement('div');
     wrapper.className = 'stock-item';
-    wrapper.appendChild(renderTile(demoThemeAssets, resource.id, resource.label));
+    wrapper.appendChild(renderTile(urbanThemeAssets, resource.id, resource.label));
     const qty = document.createElement('span');
     qty.textContent = (state.stocks[resource.id] ?? 0).toFixed(1);
     wrapper.appendChild(qty);
