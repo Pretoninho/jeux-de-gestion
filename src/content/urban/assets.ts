@@ -8,6 +8,7 @@ import truck from '../../assets/themes/urban/tile_0476.png';
 import shelf from '../../assets/themes/urban/tile_0328.png';
 import marketStall from '../../assets/themes/urban/tile_0276.png';
 import safe from '../../assets/themes/urban/tile_0444.png';
+import ground from '../../assets/themes/urban/rpg-urban-kit/tile_0037.png';
 
 // asset-composer:imports:start
 import rpg_urban_kit_tile_0096 from '../../assets/themes/urban/rpg-urban-kit/tile_0096.png';
@@ -25,6 +26,7 @@ import rpg_urban_kit_tile_0100 from '../../assets/themes/urban/rpg-urban-kit/til
  */
 export const urbanThemeAssets: ThemeAssets = {
   tileSize: DEFAULT_TILE_SIZE,
+  ground: { kind: 'image', src: ground },
   sprites: {
     'logi-scrap': { kind: 'image', src: wrench },
     'logi-materials': { kind: 'image', src: crate },

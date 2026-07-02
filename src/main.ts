@@ -2,7 +2,7 @@ import { build, createInitialState, tick } from './engine/simulation';
 import { GameLoop } from './engine/gameLoop';
 import { urbanPack } from './content/urban';
 import { urbanThemeAssets } from './content/urban/assets';
-import { renderTile } from './presentation/tile';
+import { renderTile, spriteToCss } from './presentation/tile';
 
 /**
  * This file is a throwaway dev harness proving the engine, the urban content
@@ -76,12 +76,15 @@ function renderPalette(): void {
   }
 }
 
+const groundCss = urbanThemeAssets.ground ? spriteToCss(urbanThemeAssets.ground) : null;
+
 function renderGrid(): void {
   gridEl.innerHTML = '';
   for (let y = 0; y < pack.grid.height; y++) {
     for (let x = 0; x < pack.grid.width; x++) {
       const cell = document.createElement('div');
       cell.className = 'grid-cell';
+      if (groundCss) Object.assign(cell.style, groundCss);
       const placed = state.placedBuildings.find((b) => b.x === x && b.y === y);
       if (placed) {
         const type = typeById.get(placed.type)!;

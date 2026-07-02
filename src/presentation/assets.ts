@@ -36,6 +36,8 @@ export interface ThemeAssets {
   tileSize: number;
   /** Keyed by engine id (Resource.id, Tier.id, Recipe.id, ...). Missing entries fall back to a placeholder tile. */
   sprites: Partial<Record<string, SpriteRef>>;
+  /** Ground tile painted under every grid cell. Not keyed by an engine id — there's only one. */
+  ground?: SpriteRef;
 }
 
 export const DEFAULT_TILE_SIZE = 32;
