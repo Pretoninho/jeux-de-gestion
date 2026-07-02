@@ -20,7 +20,16 @@ export interface SingleImageRef {
   src: string;
 }
 
-export type SpriteRef = SpriteSheetRef | SingleImageRef;
+/** A single flat sprite — either a whole image or one cell of a sheet. */
+export type FlatSpriteRef = SpriteSheetRef | SingleImageRef;
+
+export interface CompositeSpriteRef {
+  kind: 'composite';
+  /** Stacked bottom-to-top; layers[0] renders first (behind), the last renders on top. Any length, including 1. */
+  layers: FlatSpriteRef[];
+}
+
+export type SpriteRef = FlatSpriteRef | CompositeSpriteRef;
 
 export interface ThemeAssets {
   /** Canonical render size in px for one tile/icon. 32 unless a theme overrides it. */

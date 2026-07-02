@@ -51,6 +51,19 @@ Un id moteur (`Resource.id`, `Recipe.id`, `BuildingType.id`) n'a pas de sprite p
 
 Taille de tuile canonique : 32×32 px (voir `src/assets/README.md`). Aucun changement dans `src/engine/` n'est nécessaire.
 
+Un sprite peut être composé de **plusieurs tuiles empilées** (`kind: 'composite'`, `layers: FlatSpriteRef[]`, nombre de calques libre) — utile pour assembler une icône de bâtiment à partir de plusieurs éléments (ex. mur + porte) quand le pack source ne fournit pas de sprite "bâtiment entier". Voir `src/presentation/tile.ts`.
+
+### Outil de composition d'assets (`tools/asset-composer/`)
+
+Outil de dev — jamais expédié avec le jeu (exclu du build de production, endpoints actifs uniquement sous `npm run dev`). Permet de :
+- parcourir toutes les tuiles d'un pack importé (organisées par "kit" dans `tools/asset-composer/tiles/<kit>/`) ;
+- **importer un nouveau kit** (nom + sélection de fichiers PNG) sans passer par le code ;
+- composer une icône en empilant plusieurs tuiles avec aperçu en direct ;
+- assigner la composition à un id du pack (`Resource.id`/`BuildingType.id`, autocomplété) ;
+- **enregistrer directement** dans `src/content/urban/assets.ts` (copie les fichiers utilisés dans `src/assets/themes/urban/<kit>/`, régénère les imports et les entrées `sprites` dans une section délimitée par des marqueurs `// asset-composer:...:start/end` — le reste du fichier n'est jamais touché).
+
+Accès : `npm run dev` puis ouvrir `/tools/asset-composer/index.html`. Si un id composé existe déjà comme entrée manuscrite ailleurs dans le fichier, la retirer à la main (TypeScript refusera sinon une clé dupliquée).
+
 ## Développement
 
 ```

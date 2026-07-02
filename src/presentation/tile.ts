@@ -1,4 +1,4 @@
-import type { ThemeAssets } from './assets';
+import type { FlatSpriteRef, ThemeAssets } from './assets';
 
 /** Deterministic color from an id, so unmapped resources still look distinct and stable across reloads. */
 function placeholderColor(id: string): string {
@@ -11,10 +11,35 @@ function placeholderColor(id: string): string {
   return `hsl(${hue}, 55%, 55%)`;
 }
 
+interface LayerCss {
+  image: string;
+  position: string;
+  repeat: string;
+  size: string;
+}
+
+function layerCss(layer: FlatSpriteRef): LayerCss {
+  if (layer.kind === 'spritesheet') {
+    return {
+      image: `url(${layer.src})`,
+      position: `-${layer.x * layer.tileWidth}px -${layer.y * layer.tileHeight}px`,
+      repeat: 'no-repeat',
+      size: 'auto',
+    };
+  }
+  return { image: `url(${layer.src})`, position: '0 0', repeat: 'no-repeat', size: 'cover' };
+}
+
 /**
  * Renders one tile/icon for an engine id. Falls back to a colored square
  * with an initial when the active theme has no sprite mapped yet, so art
  * can be dropped in later without any code change.
+ *
+ * Composite sprites (multiple stacked layers, e.g. a wall + a door forming
+ * one building icon) are painted via CSS's multi-background support —
+ * layers are listed bottom-to-top in data, but CSS paints the first-listed
+ * background on top, so the layer order is reversed when building the
+ * background-image list.
  */
 export function renderTile(assets: ThemeAssets, id: string, label: string): HTMLElement {
   const el = document.createElement('div');
@@ -31,12 +56,10 @@ export function renderTile(assets: ThemeAssets, id: string, label: string): HTML
     return el;
   }
 
-  el.style.backgroundImage = `url(${sprite.src})`;
-  if (sprite.kind === 'spritesheet') {
-    el.style.backgroundPosition = `-${sprite.x * sprite.tileWidth}px -${sprite.y * sprite.tileHeight}px`;
-    el.style.backgroundRepeat = 'no-repeat';
-  } else {
-    el.style.backgroundSize = 'cover';
-  }
+  const layers = (sprite.kind === 'composite' ? sprite.layers : [sprite]).map(layerCss).reverse();
+  el.style.backgroundImage = layers.map((l) => l.image).join(', ');
+  el.style.backgroundPosition = layers.map((l) => l.position).join(', ');
+  el.style.backgroundRepeat = layers.map((l) => l.repeat).join(', ');
+  el.style.backgroundSize = layers.map((l) => l.size).join(', ');
   return el;
 }

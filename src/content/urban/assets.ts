@@ -9,6 +9,11 @@ import shelf from '../../assets/themes/urban/tile_0328.png';
 import marketStall from '../../assets/themes/urban/tile_0276.png';
 import safe from '../../assets/themes/urban/tile_0444.png';
 
+// asset-composer:imports:start
+import rpg_urban_kit_tile_0096 from '../../assets/themes/urban/rpg-urban-kit/tile_0096.png';
+import rpg_urban_kit_tile_0100 from '../../assets/themes/urban/rpg-urban-kit/tile_0100.png';
+// asset-composer:imports:end
+
 /**
  * Sprites from Kenney's "RPG Urban Kit" (CC0, see CREDITS.md). `logi-parts`
  * and `logi-repair-shop` have no good match in the pack and stay on the
@@ -30,7 +35,6 @@ export const urbanThemeAssets: ThemeAssets = {
     'comm-display': { kind: 'image', src: marketStall },
     'comm-sale': { kind: 'image', src: safe },
 
-    'logi-scrapyard': { kind: 'image', src: wrench },
     'logi-warehouse': { kind: 'image', src: crate },
     'logi-packing-center': { kind: 'image', src: greenCrate },
     'logi-delivery-hub': { kind: 'image', src: truck },
@@ -38,5 +42,15 @@ export const urbanThemeAssets: ThemeAssets = {
     'comm-wholesaler': { kind: 'image', src: shelf },
     'comm-shopfront': { kind: 'image', src: marketStall },
     'comm-register': { kind: 'image', src: safe },
+
+    // asset-composer:sprites:start
+    'logi-scrapyard': {
+      kind: 'composite',
+      layers: [
+        { kind: 'image', src: rpg_urban_kit_tile_0100 },
+        { kind: 'image', src: rpg_urban_kit_tile_0096 },
+      ],
+    },
+// asset-composer:sprites:end
   },
 };
