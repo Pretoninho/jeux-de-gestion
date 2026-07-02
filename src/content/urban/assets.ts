@@ -5,6 +5,9 @@ import wrench from '../../assets/themes/urban/tile_0244.png';
 import crate from '../../assets/themes/urban/tile_0208.png';
 import greenCrate from '../../assets/themes/urban/tile_0300.png';
 import truck from '../../assets/themes/urban/tile_0476.png';
+import shelf from '../../assets/themes/urban/tile_0328.png';
+import marketStall from '../../assets/themes/urban/tile_0276.png';
+import safe from '../../assets/themes/urban/tile_0444.png';
 
 /**
  * Sprites from Kenney's "RPG Urban Kit" (CC0, see CREDITS.md). `logi-parts`
@@ -18,5 +21,9 @@ export const urbanThemeAssets: ThemeAssets = {
     'logi-materials': { kind: 'image', src: crate },
     'logi-packaging': { kind: 'image', src: greenCrate },
     'logi-package': { kind: 'image', src: truck },
+
+    'comm-goods': { kind: 'image', src: shelf },
+    'comm-display': { kind: 'image', src: marketStall },
+    'comm-sale': { kind: 'image', src: safe },
   },
 };
