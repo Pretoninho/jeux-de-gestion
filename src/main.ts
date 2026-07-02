@@ -1,6 +1,8 @@
 import { resolveFlow } from './engine/simulation';
 import { GameLoop } from './engine/gameLoop';
 import { demoPack } from './content/demo';
+import { demoThemeAssets } from './content/demo/assets';
+import { renderTile } from './presentation/tile';
 import type { ContentPack } from './engine/types';
 
 /**
@@ -39,6 +41,10 @@ app.innerHTML = `
     </thead>
     <tbody></tbody>
   </table>
+
+  <h2>Aperçu des tuiles</h2>
+  <p>Chaque ressource/palier sans sprite mappé retombe sur un placeholder coloré — dépose un pack dans <code>src/assets/themes/demo/</code> et complète <code>src/content/demo/assets.ts</code> pour les remplacer un par un.</p>
+  <div id="tile-preview" class="tile-row"></div>
 `;
 
 const tbody = app.querySelector('tbody')!;
@@ -84,5 +90,10 @@ app.querySelector('#bump')!.addEventListener('click', () => {
   if (exportRecipe) exportRecipe.capacity += 10;
   render();
 });
+
+const tilePreview = app.querySelector<HTMLDivElement>('#tile-preview')!;
+for (const resource of pack.resources) {
+  tilePreview.appendChild(renderTile(demoThemeAssets, resource.id, resource.label));
+}
 
 render();

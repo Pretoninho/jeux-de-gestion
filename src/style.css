@@ -22,3 +22,25 @@ td {
   padding: 0.4rem 0.6rem;
   text-align: left;
 }
+
+.tile-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  image-rendering: pixelated;
+  border-radius: 4px;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  user-select: none;
+}
+
+.tile--placeholder {
+  outline: 1px dashed rgba(0, 0, 0, 0.25);
+}
