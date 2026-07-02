@@ -58,12 +58,22 @@ export function spriteToCss(sprite: SpriteRef): SpriteCss {
  * Renders one tile/icon for an engine id. Falls back to a colored square
  * with an initial when the active theme has no sprite mapped yet, so art
  * can be dropped in later without any code change.
+ *
+ * `fill: true` sizes the element to 100% of its parent instead of the fixed
+ * tile size — for a building whose footprint spans multiple grid cells, the
+ * caller stretches the parent cell across those cells (see main.ts) and the
+ * icon just needs to fill whatever size that ends up being.
  */
-export function renderTile(assets: ThemeAssets, id: string, label: string): HTMLElement {
+export function renderTile(assets: ThemeAssets, id: string, label: string, fill = false): HTMLElement {
   const el = document.createElement('div');
   el.className = 'tile';
-  el.style.width = `${assets.tileSize}px`;
-  el.style.height = `${assets.tileSize}px`;
+  if (fill) {
+    el.style.width = '100%';
+    el.style.height = '100%';
+  } else {
+    el.style.width = `${assets.tileSize}px`;
+    el.style.height = `${assets.tileSize}px`;
+  }
   el.title = label;
 
   const sprite = assets.sprites[id];

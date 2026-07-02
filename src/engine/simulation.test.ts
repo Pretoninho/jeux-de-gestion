@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { build, createInitialState, tick } from './simulation';
+import { build, buildingAt, createInitialState, tick } from './simulation';
 import type { ContentPack } from './types';
 
 function packWithTypes(overrides: Partial<ContentPack> = {}): ContentPack {
@@ -61,6 +61,44 @@ describe('build', () => {
     const state = createInitialState(pack, 100);
     const result = build(pack, state, 'nope', 0, 0);
     expect(result).toEqual({ success: false, reason: 'unknown-type' });
+  });
+});
+
+describe('build with a multi-cell footprint', () => {
+  const pack = packWithTypes({
+    buildingTypes: [
+      { id: 'mansion', label: 'Mansion', recipe: 'extract-wood', capacity: 10, buildCost: 20, footprint: { width: 2, height: 2 } },
+      { id: 'lumberjack', label: 'Lumberjack', recipe: 'extract-wood', capacity: 10, buildCost: 20 },
+    ],
+  });
+
+  it('places a 2x2 building and occupies every cell of its footprint', () => {
+    const state = createInitialState(pack, 100);
+    const result = build(pack, state, 'mansion', 0, 0);
+    expect(result).toEqual({ success: true });
+    expect(buildingAt(pack, state, 0, 0)?.id).toBe('mansion@0,0');
+    expect(buildingAt(pack, state, 1, 1)?.id).toBe('mansion@0,0');
+    expect(buildingAt(pack, state, 2, 0)).toBeUndefined();
+  });
+
+  it('refuses when the footprint would extend past the grid edge', () => {
+    const state = createInitialState(pack, 100);
+    const result = build(pack, state, 'mansion', 3, 3);
+    expect(result).toEqual({ success: false, reason: 'out-of-bounds' });
+  });
+
+  it('refuses when the footprint overlaps a 1x1 building that is not at the same origin', () => {
+    const state = createInitialState(pack, 100);
+    build(pack, state, 'lumberjack', 1, 1);
+    const result = build(pack, state, 'mansion', 0, 0);
+    expect(result).toEqual({ success: false, reason: 'occupied' });
+  });
+
+  it('lets a later building fit next to (not overlapping) an already-placed footprint', () => {
+    const state = createInitialState(pack, 100);
+    build(pack, state, 'mansion', 0, 0);
+    const result = build(pack, state, 'lumberjack', 2, 0);
+    expect(result).toEqual({ success: true });
   });
 });
 

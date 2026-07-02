@@ -1,4 +1,4 @@
-import type { ContentPack } from './types';
+import type { BuildingType, ContentPack } from './types';
 
 export interface PlacedBuilding {
   id: string;
@@ -25,8 +25,37 @@ export function createInitialState(pack: ContentPack, startingMoney = 0): Econom
   };
 }
 
-export function isCellOccupied(state: EconomyState, x: number, y: number): boolean {
-  return state.placedBuildings.some((b) => b.x === x && b.y === y);
+export interface Footprint {
+  width: number;
+  height: number;
+}
+
+/** A building type's footprint in grid cells. Defaults to 1x1 when unspecified. */
+export function footprintOf(type: BuildingType): Footprint {
+  return type.footprint ?? { width: 1, height: 1 };
+}
+
+interface Rect extends Footprint {
+  x: number;
+  y: number;
+}
+
+function rectOf(pack: ContentPack, placed: PlacedBuilding): Rect {
+  const type = pack.buildingTypes.find((t) => t.id === placed.type);
+  if (!type) {
+    throw new Error(`Placed building "${placed.id}" references unknown type "${placed.type}"`);
+  }
+  return { x: placed.x, y: placed.y, ...footprintOf(type) };
+}
+
+function rectsOverlap(a: Rect, b: Rect): boolean {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+/** Finds the placed building (if any) whose footprint covers cell (x, y) — not just its origin corner. */
+export function buildingAt(pack: ContentPack, state: EconomyState, x: number, y: number): PlacedBuilding | undefined {
+  const cell: Rect = { x, y, width: 1, height: 1 };
+  return state.placedBuildings.find((b) => rectsOverlap(cell, rectOf(pack, b)));
 }
 
 export interface BuildResult {
@@ -36,17 +65,23 @@ export interface BuildResult {
 
 /**
  * Places one instance of a building type on the grid, spending money.
- * v1 footprint is always 1x1 and there is no demolition — see CLAUDE.md for
- * why the fuller city-builder scope (camera, variable footprints, removal)
- * was deliberately deferred.
+ * (x, y) is the top-left corner of the building's footprint (1x1 unless
+ * BuildingType.footprint says otherwise). There is still no demolition —
+ * see CLAUDE.md for why that part of the fuller city-builder scope stays
+ * deferred.
  */
 export function build(pack: ContentPack, state: EconomyState, typeId: string, x: number, y: number): BuildResult {
   const type = pack.buildingTypes.find((t) => t.id === typeId);
   if (!type) return { success: false, reason: 'unknown-type' };
-  if (x < 0 || y < 0 || x >= pack.grid.width || y >= pack.grid.height) {
+
+  const { width, height } = footprintOf(type);
+  if (x < 0 || y < 0 || x + width > pack.grid.width || y + height > pack.grid.height) {
     return { success: false, reason: 'out-of-bounds' };
   }
-  if (isCellOccupied(state, x, y)) return { success: false, reason: 'occupied' };
+  const rect: Rect = { x, y, width, height };
+  if (state.placedBuildings.some((b) => rectsOverlap(rect, rectOf(pack, b)))) {
+    return { success: false, reason: 'occupied' };
+  }
   if (state.money < type.buildCost) return { success: false, reason: 'unaffordable' };
 
   state.money -= type.buildCost;

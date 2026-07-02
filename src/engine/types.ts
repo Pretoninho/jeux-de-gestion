@@ -34,6 +34,8 @@ export interface BuildingType {
   capacity: number;
   /** Money cost to place one instance on the grid. */
   buildCost: number;
+  /** Footprint in grid cells. Defaults to 1x1 when omitted. */
+  footprint?: { width: number; height: number };
 }
 
 export interface GridSize {
@@ -48,9 +50,10 @@ export interface ContentPack {
   recipes: Recipe[];
   buildingTypes: BuildingType[];
   /**
-   * v1 grid: fixed size, no camera/pan, every building is 1x1. Variable
-   * footprints and a scrollable map are deliberately out of scope for now —
-   * see CLAUDE.md's "Concept de jeu actuel" for the phasing rationale.
+   * v1 grid: fixed size, no camera/pan. Buildings may have a footprint
+   * larger than 1x1 (see BuildingType.footprint) — a scrollable map is still
+   * deliberately out of scope for now, see CLAUDE.md's "Concept de jeu
+   * actuel" for the phasing rationale.
    */
   grid: GridSize;
 }

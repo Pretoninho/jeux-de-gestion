@@ -22,6 +22,7 @@ export const urbanPack: ContentPack = {
     { id: 'comm-goods', label: 'Marchandises' },
     { id: 'comm-display', label: 'Vitrine garnie' },
     { id: 'comm-sale', label: 'Vente', sellPrice: 12 },
+    { id: 'comm-sale-premium', label: 'Vente premium', sellPrice: 25 },
   ],
   recipes: [
     { id: 'logi-extract-scrap', inputs: [], output: { resource: 'logi-scrap', quantity: 1 } },
@@ -56,6 +57,15 @@ export const urbanPack: ContentPack = {
       inputs: [{ resource: 'comm-display', quantity: 1 }],
       output: { resource: 'comm-sale', quantity: 1 },
     },
+    // Premium lane: consumes more raw (x3) than the standard Vitrine (x2) and is
+    // slower (see capacity below), but the output sells for 25 vs 12 — a
+    // yield-vs-throughput arbitrage against the normal commerce chain, which
+    // competes with it for the same Marchandises.
+    {
+      id: 'comm-make-sale-premium',
+      inputs: [{ resource: 'comm-goods', quantity: 3 }],
+      output: { resource: 'comm-sale-premium', quantity: 1 },
+    },
   ],
   buildingTypes: [
     { id: 'logi-scrapyard', label: 'Casse auto', recipe: 'logi-extract-scrap', capacity: 10, buildCost: 30 },
@@ -67,6 +77,17 @@ export const urbanPack: ContentPack = {
     { id: 'comm-wholesaler', label: 'Grossiste', recipe: 'comm-extract-goods', capacity: 12, buildCost: 30 },
     { id: 'comm-shopfront', label: 'Vitrine', recipe: 'comm-make-display', capacity: 5, buildCost: 40 },
     { id: 'comm-register', label: 'Caisse', recipe: 'comm-make-sale', capacity: 5, buildCost: 50 },
+    {
+      id: 'comm-luxury-shopfront',
+      label: 'Vitrine de luxe',
+      recipe: 'comm-make-sale-premium',
+      // Capacity/cost bumped vs the 1x1 version to roughly match its 9-cell
+      // footprint (5x the cells, ~5x the throughput and price) — first pass,
+      // adjust freely once it's been played with.
+      capacity: 15,
+      buildCost: 150,
+      footprint: { width: 3, height: 3 },
+    },
   ],
   // v1: small fixed grid, no camera/pan — see CLAUDE.md for the phasing rationale.
   grid: { width: 8, height: 8 },

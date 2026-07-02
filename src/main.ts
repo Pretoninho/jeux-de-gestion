@@ -1,4 +1,4 @@
-import { build, createInitialState, tick } from './engine/simulation';
+import { buildingAt, build, createInitialState, footprintOf, tick } from './engine/simulation';
 import { GameLoop } from './engine/gameLoop';
 import { urbanPack } from './content/urban';
 import { urbanThemeAssets } from './content/urban/assets';
@@ -82,13 +82,27 @@ function renderGrid(): void {
   gridEl.innerHTML = '';
   for (let y = 0; y < pack.grid.height; y++) {
     for (let x = 0; x < pack.grid.width; x++) {
+      const placed = buildingAt(pack, state, x, y);
+      // Cell covered by a multi-cell building placed elsewhere: its origin
+      // cell (below) renders one stretched tile for the whole footprint —
+      // skip so CSS grid auto-placement leaves this track for that item.
+      if (placed && (placed.x !== x || placed.y !== y)) continue;
+
       const cell = document.createElement('div');
       cell.className = 'grid-cell';
       if (groundCss) Object.assign(cell.style, groundCss);
-      const placed = state.placedBuildings.find((b) => b.x === x && b.y === y);
+
       if (placed) {
         const type = typeById.get(placed.type)!;
-        cell.appendChild(renderTile(urbanThemeAssets, type.id, type.label));
+        const { width, height } = footprintOf(type);
+        const multiCell = width > 1 || height > 1;
+        if (multiCell) {
+          cell.style.gridColumn = `span ${width}`;
+          cell.style.gridRow = `span ${height}`;
+          cell.style.width = 'auto';
+          cell.style.height = 'auto';
+        }
+        cell.appendChild(renderTile(urbanThemeAssets, type.id, type.label, multiCell));
         cell.title = `${type.label} — ${(lastProduced[placed.id] ?? 0).toFixed(1)}/tick`;
       } else {
         cell.classList.add('grid-cell--empty');
