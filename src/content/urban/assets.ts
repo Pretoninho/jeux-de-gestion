@@ -11,8 +11,12 @@ import safe from '../../assets/themes/urban/tile_0444.png';
 
 /**
  * Sprites from Kenney's "RPG Urban Kit" (CC0, see CREDITS.md). `logi-parts`
- * has no good match in the pack and stays on the placeholder fallback on
- * purpose — proof the two paths still coexist.
+ * and `logi-repair-shop` have no good match in the pack and stay on the
+ * placeholder fallback on purpose — proof the two paths still coexist.
+ *
+ * Building types reuse their primary resource's sprite as a stand-in icon
+ * on the grid (e.g. the scrapyard shows the wrench it produces) — no
+ * dedicated "building" tiles extracted from the kit yet.
  */
 export const urbanThemeAssets: ThemeAssets = {
   tileSize: DEFAULT_TILE_SIZE,
@@ -25,5 +29,14 @@ export const urbanThemeAssets: ThemeAssets = {
     'comm-goods': { kind: 'image', src: shelf },
     'comm-display': { kind: 'image', src: marketStall },
     'comm-sale': { kind: 'image', src: safe },
+
+    'logi-scrapyard': { kind: 'image', src: wrench },
+    'logi-warehouse': { kind: 'image', src: crate },
+    'logi-packing-center': { kind: 'image', src: greenCrate },
+    'logi-delivery-hub': { kind: 'image', src: truck },
+
+    'comm-wholesaler': { kind: 'image', src: shelf },
+    'comm-shopfront': { kind: 'image', src: marketStall },
+    'comm-register': { kind: 'image', src: safe },
   },
 };

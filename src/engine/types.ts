@@ -26,14 +26,19 @@ export interface Recipe {
   };
 }
 
-export interface Building {
+export interface BuildingType {
   id: string;
   label: string;
   recipe: string;
-  /** Max output units/tick at current capacity. */
+  /** Production capacity granted by a single placed instance (units/tick at 100%). */
   capacity: number;
-  /** Money cost to add +1 capacity via invest(). */
-  capacityCost: number;
+  /** Money cost to place one instance on the grid. */
+  buildCost: number;
+}
+
+export interface GridSize {
+  width: number;
+  height: number;
 }
 
 export interface ContentPack {
@@ -41,6 +46,11 @@ export interface ContentPack {
   label: string;
   resources: Resource[];
   recipes: Recipe[];
-  /** Starting buildings; capacities grow at runtime via invest(), the pack itself stays immutable. */
-  buildings: Building[];
+  buildingTypes: BuildingType[];
+  /**
+   * v1 grid: fixed size, no camera/pan, every building is 1x1. Variable
+   * footprints and a scrollable map are deliberately out of scope for now —
+   * see CLAUDE.md's "Concept de jeu actuel" for the phasing rationale.
+   */
+  grid: GridSize;
 }

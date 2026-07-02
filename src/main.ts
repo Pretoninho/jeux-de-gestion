@@ -1,4 +1,4 @@
-import { createInitialState, invest, tick } from './engine/simulation';
+import { build, createInitialState, tick } from './engine/simulation';
 import { GameLoop } from './engine/gameLoop';
 import { urbanPack } from './content/urban';
 import { urbanThemeAssets } from './content/urban/assets';
@@ -11,9 +11,13 @@ import { renderTile } from './presentation/tile';
  */
 
 const pack = urbanPack;
-const state = createInitialState(pack, 20);
+const state = createInitialState(pack, 150);
 const resourceById = new Map(pack.resources.map((r) => [r.id, r]));
 const recipeById = new Map(pack.recipes.map((r) => [r.id, r]));
+const typeById = new Map(pack.buildingTypes.map((t) => [t.id, t]));
+
+let selectedType: string | null = null;
+let lastProduced: Record<string, number> = {};
 
 function formatRecipe(recipeId: string): string {
   const recipe = recipeById.get(recipeId);
@@ -34,55 +38,74 @@ app.innerHTML = `
     <button id="speed-2">x2</button>
     <button id="speed-5">x5</button>
   </div>
-  <table id="buildings-table">
-    <thead>
-      <tr>
-        <th>Bâtiment</th>
-        <th>Recette</th>
-        <th>Capacité</th>
-        <th>Produit (dernier tick)</th>
-        <th>Investir</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+
+  <h2>Construire</h2>
+  <p>Sélectionne un type de bâtiment puis clique une case vide de la grille. Pas de démolition/déplacement pour l'instant (v1 volontairement modeste, voir <code>CLAUDE.md</code>).</p>
+  <div id="palette" class="palette"></div>
+
+  <h2>Grille (${pack.grid.width}×${pack.grid.height})</h2>
+  <div id="grid" class="grid" style="--grid-cols: ${pack.grid.width}"></div>
 
   <h2>Stocks</h2>
-  <p>Chaque ressource sans sprite mappé retombe sur un placeholder coloré — dépose un pack dans <code>src/assets/themes/urban/</code> et complète <code>src/content/urban/assets.ts</code> pour les remplacer un par un.</p>
   <div id="stock-row" class="tile-row"></div>
 `;
 
 const moneyEl = app.querySelector('#money')!;
 const tickCountEl = app.querySelector('#tick-count')!;
-const buildingsBody = app.querySelector('#buildings-table tbody')!;
+const paletteEl = app.querySelector<HTMLDivElement>('#palette')!;
+const gridEl = app.querySelector<HTMLDivElement>('#grid')!;
 const stockRow = app.querySelector<HTMLDivElement>('#stock-row')!;
 const toggleBtn = app.querySelector<HTMLButtonElement>('#toggle')!;
 
-let lastProduced: Record<string, number> = {};
+function renderPalette(): void {
+  paletteEl.innerHTML = '';
+  for (const type of pack.buildingTypes) {
+    const btn = document.createElement('button');
+    btn.className = 'palette-btn';
+    if (type.id === selectedType) btn.classList.add('palette-btn--active');
+    btn.title = formatRecipe(type.recipe);
+    btn.appendChild(renderTile(urbanThemeAssets, type.id, type.label));
+    const label = document.createElement('span');
+    label.textContent = `${type.label} (${type.buildCost}💰)`;
+    btn.appendChild(label);
+    btn.addEventListener('click', () => {
+      selectedType = selectedType === type.id ? null : type.id;
+      render();
+    });
+    paletteEl.appendChild(btn);
+  }
+}
+
+function renderGrid(): void {
+  gridEl.innerHTML = '';
+  for (let y = 0; y < pack.grid.height; y++) {
+    for (let x = 0; x < pack.grid.width; x++) {
+      const cell = document.createElement('div');
+      cell.className = 'grid-cell';
+      const placed = state.placedBuildings.find((b) => b.x === x && b.y === y);
+      if (placed) {
+        const type = typeById.get(placed.type)!;
+        cell.appendChild(renderTile(urbanThemeAssets, type.id, type.label));
+        cell.title = `${type.label} — ${(lastProduced[placed.id] ?? 0).toFixed(1)}/tick`;
+      } else {
+        cell.classList.add('grid-cell--empty');
+        if (selectedType) cell.classList.add('grid-cell--buildable');
+        cell.addEventListener('click', () => {
+          if (!selectedType) return;
+          const result = build(pack, state, selectedType, x, y);
+          if (result.success) render();
+        });
+      }
+      gridEl.appendChild(cell);
+    }
+  }
+}
 
 function render(tickCount = 0): void {
   moneyEl.textContent = state.money.toFixed(2);
   tickCountEl.textContent = String(tickCount);
-
-  buildingsBody.innerHTML = '';
-  for (const building of state.buildings) {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${building.label}</td>
-      <td>${formatRecipe(building.recipe)}</td>
-      <td>${building.capacity.toFixed(2)}</td>
-      <td>${(lastProduced[building.id] ?? 0).toFixed(2)}</td>
-      <td></td>
-    `;
-    const investBtn = document.createElement('button');
-    investBtn.textContent = `+1 (coût ${building.capacityCost})`;
-    investBtn.addEventListener('click', () => {
-      invest(state, building.id, 1);
-      render(tickCount);
-    });
-    row.lastElementChild!.appendChild(investBtn);
-    buildingsBody.appendChild(row);
-  }
+  renderPalette();
+  renderGrid();
 
   stockRow.innerHTML = '';
   for (const resource of pack.resources) {

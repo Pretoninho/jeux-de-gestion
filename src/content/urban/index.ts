@@ -57,15 +57,17 @@ export const urbanPack: ContentPack = {
       output: { resource: 'comm-sale', quantity: 1 },
     },
   ],
-  buildings: [
-    { id: 'logi-scrapyard', label: 'Casse auto', recipe: 'logi-extract-scrap', capacity: 10, capacityCost: 3 },
-    { id: 'logi-warehouse', label: 'Entrepôt', recipe: 'logi-extract-materials', capacity: 8, capacityCost: 4 },
-    { id: 'logi-repair-shop', label: 'Atelier de réparation', recipe: 'logi-make-parts', capacity: 4, capacityCost: 8 },
-    { id: 'logi-packing-center', label: "Centre d'emballage", recipe: 'logi-make-packaging', capacity: 3, capacityCost: 10 },
-    { id: 'logi-delivery-hub', label: 'Centre de livraison', recipe: 'logi-make-package', capacity: 6, capacityCost: 15 },
+  buildingTypes: [
+    { id: 'logi-scrapyard', label: 'Casse auto', recipe: 'logi-extract-scrap', capacity: 10, buildCost: 30 },
+    { id: 'logi-warehouse', label: 'Entrepôt', recipe: 'logi-extract-materials', capacity: 8, buildCost: 25 },
+    { id: 'logi-repair-shop', label: 'Atelier de réparation', recipe: 'logi-make-parts', capacity: 4, buildCost: 40 },
+    { id: 'logi-packing-center', label: "Centre d'emballage", recipe: 'logi-make-packaging', capacity: 3, buildCost: 45 },
+    { id: 'logi-delivery-hub', label: 'Centre de livraison', recipe: 'logi-make-package', capacity: 6, buildCost: 60 },
 
-    { id: 'comm-wholesaler', label: 'Grossiste', recipe: 'comm-extract-goods', capacity: 12, capacityCost: 3 },
-    { id: 'comm-shopfront', label: 'Vitrine', recipe: 'comm-make-display', capacity: 5, capacityCost: 9 },
-    { id: 'comm-register', label: 'Caisse', recipe: 'comm-make-sale', capacity: 5, capacityCost: 12 },
+    { id: 'comm-wholesaler', label: 'Grossiste', recipe: 'comm-extract-goods', capacity: 12, buildCost: 30 },
+    { id: 'comm-shopfront', label: 'Vitrine', recipe: 'comm-make-display', capacity: 5, buildCost: 40 },
+    { id: 'comm-register', label: 'Caisse', recipe: 'comm-make-sale', capacity: 5, buildCost: 50 },
   ],
+  // v1: small fixed grid, no camera/pan — see CLAUDE.md for the phasing rationale.
+  grid: { width: 8, height: 8 },
 };

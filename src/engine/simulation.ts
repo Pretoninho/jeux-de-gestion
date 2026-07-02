@@ -1,11 +1,18 @@
-import type { Building, ContentPack } from './types';
+import type { ContentPack } from './types';
+
+export interface PlacedBuilding {
+  id: string;
+  /** BuildingType id. */
+  type: string;
+  x: number;
+  y: number;
+}
 
 export interface EconomyState {
   /** Resource id -> quantity currently in stock. */
   stocks: Record<string, number>;
   money: number;
-  /** Mutable copy of the pack's buildings — capacities grow independently of the (immutable) pack. */
-  buildings: Building[];
+  placedBuildings: PlacedBuilding[];
 }
 
 export function createInitialState(pack: ContentPack, startingMoney = 0): EconomyState {
@@ -14,38 +21,74 @@ export function createInitialState(pack: ContentPack, startingMoney = 0): Econom
   return {
     stocks,
     money: startingMoney,
-    buildings: pack.buildings.map((building) => ({ ...building })),
+    placedBuildings: [],
   };
 }
 
+export function isCellOccupied(state: EconomyState, x: number, y: number): boolean {
+  return state.placedBuildings.some((b) => b.x === x && b.y === y);
+}
+
+export interface BuildResult {
+  success: boolean;
+  reason?: 'unknown-type' | 'out-of-bounds' | 'occupied' | 'unaffordable';
+}
+
+/**
+ * Places one instance of a building type on the grid, spending money.
+ * v1 footprint is always 1x1 and there is no demolition — see CLAUDE.md for
+ * why the fuller city-builder scope (camera, variable footprints, removal)
+ * was deliberately deferred.
+ */
+export function build(pack: ContentPack, state: EconomyState, typeId: string, x: number, y: number): BuildResult {
+  const type = pack.buildingTypes.find((t) => t.id === typeId);
+  if (!type) return { success: false, reason: 'unknown-type' };
+  if (x < 0 || y < 0 || x >= pack.grid.width || y >= pack.grid.height) {
+    return { success: false, reason: 'out-of-bounds' };
+  }
+  if (isCellOccupied(state, x, y)) return { success: false, reason: 'occupied' };
+  if (state.money < type.buildCost) return { success: false, reason: 'unaffordable' };
+
+  state.money -= type.buildCost;
+  state.placedBuildings.push({ id: `${typeId}@${x},${y}`, type: typeId, x, y });
+  return { success: true };
+}
+
 export interface TickResult {
-  /** Building id -> units actually produced this tick (0..capacity, throttled by input availability). */
+  /** Placed building id -> units actually produced this tick (0..capacity, throttled by input availability). */
   produced: Record<string, number>;
   /** Money earned this tick from auto-selling final goods. */
   revenue: number;
 }
 
 /**
- * Advances the economy by one tick: each building consumes its recipe's
- * inputs from stock (throttled to whatever is actually available) and adds
- * its output to stock, then any resource with a sellPrice is auto-sold off.
+ * Advances the economy by one tick: each placed building consumes its
+ * recipe's inputs from stock (throttled to whatever is actually available)
+ * and adds its output to stock, then any resource with a sellPrice is
+ * auto-sold off.
  *
- * Buildings run in array order and each one claims stock before the next —
- * a building earlier in `pack.buildings` can starve a later one competing
- * for the same input. Acceptable for a single flat economy; revisit with
- * fair-share allocation if that ordering ever becomes a real balance issue.
+ * Buildings run in placement order and each one claims stock before the
+ * next — a building placed earlier can starve one placed later that
+ * competes for the same input. Acceptable for a single flat economy;
+ * revisit with fair-share allocation if that ordering ever becomes a real
+ * balance issue.
  */
 export function tick(pack: ContentPack, state: EconomyState): TickResult {
   const recipesById = new Map(pack.recipes.map((recipe) => [recipe.id, recipe]));
+  const typesById = new Map(pack.buildingTypes.map((type) => [type.id, type]));
   const produced: Record<string, number> = {};
 
-  for (const building of state.buildings) {
-    const recipe = recipesById.get(building.recipe);
+  for (const placed of state.placedBuildings) {
+    const type = typesById.get(placed.type);
+    if (!type) {
+      throw new Error(`Placed building "${placed.id}" references unknown type "${placed.type}"`);
+    }
+    const recipe = recipesById.get(type.recipe);
     if (!recipe) {
-      throw new Error(`Building "${building.id}" references unknown recipe "${building.recipe}"`);
+      throw new Error(`Building type "${type.id}" references unknown recipe "${type.recipe}"`);
     }
 
-    let units = building.capacity;
+    let units = type.capacity;
     for (const input of recipe.inputs) {
       const available = state.stocks[input.resource] ?? 0;
       units = Math.min(units, available / input.quantity);
@@ -57,7 +100,7 @@ export function tick(pack: ContentPack, state: EconomyState): TickResult {
     }
     state.stocks[recipe.output.resource] = (state.stocks[recipe.output.resource] ?? 0) + recipe.output.quantity * units;
 
-    produced[building.id] = units;
+    produced[placed.id] = units;
   }
 
   let revenue = 0;
@@ -71,24 +114,4 @@ export function tick(pack: ContentPack, state: EconomyState): TickResult {
   state.money += revenue;
 
   return { produced, revenue };
-}
-
-/**
- * Spends money to add capacity to a building. Silently caps the increase at
- * whatever `state.money` can afford, and returns the capacity actually
- * added (0 if the building is unaffordable at all).
- */
-export function invest(state: EconomyState, buildingId: string, capacityDelta: number): number {
-  const building = state.buildings.find((b) => b.id === buildingId);
-  if (!building) {
-    throw new Error(`Unknown building "${buildingId}"`);
-  }
-  if (capacityDelta <= 0) return 0;
-
-  const affordable = building.capacityCost > 0 ? state.money / building.capacityCost : capacityDelta;
-  const actualDelta = Math.min(capacityDelta, Math.max(0, affordable));
-
-  building.capacity += actualDelta;
-  state.money -= actualDelta * building.capacityCost;
-  return actualDelta;
 }

@@ -9,8 +9,8 @@ Le projet sépare strictement le **moteur** (simulation) de la **présentation**
 ```
 src/
   engine/         moteur : aucune dépendance UI, aucun a priori de thème
-    types.ts        types génériques : Resource, Recipe, Building, ContentPack
-    simulation.ts    tick() : production/stocks/vente, invest() : achète de la capacité
+    types.ts        types génériques : Resource, Recipe, BuildingType, ContentPack
+    simulation.ts    tick() : production/stocks/vente, build() : place un bâtiment sur la grille
     gameLoop.ts      boucle temps réel : pause, vitesse x1/x2/x5
   presentation/   couche visuelle générique, ignorée par le moteur
     assets.ts        types ThemeAssets / SpriteRef (mapping id moteur -> sprite)
@@ -23,17 +23,19 @@ src/
   main.ts           harnais de développement (pas l'UI finale)
 ```
 
-### Le moteur de production (`tick`)
+### Le moteur de production (`tick`) et de construction (`build`)
 
-Économie à **une seule échelle** — pas de paliers empilés, la profondeur vient d'ajouter des bâtiments/recettes, pas de changer d'ordre de grandeur. Chaque `Building` a une recette (graphe de recettes libre, pas de patron imposé) et une capacité (unités/tick à pleine cadence).
+Économie à **une seule échelle** — pas de paliers empilés, la profondeur vient d'ajouter des bâtiments/recettes, pas de changer d'ordre de grandeur. Chaque pack définit des `BuildingType` (recette + capacité + coût de construction) et une grille fixe (`grid: { width, height }`). Le joueur place des instances de ces types sur la grille via `build()`, qui vérifie case libre + dans les limites + argent suffisant.
 
-À chaque tick, chaque bâtiment produit en fonction du stock disponible de ses ressources d'entrée :
+**v1 volontairement modeste** : grille fixe (pas de caméra/scroll), empreinte 1x1 pour tous les bâtiments, construction uniquement (pas de démolition/déplacement). Une carte plus grande avec caméra, des empreintes variables et la démolition sont prévues plus tard, une fois cette base validée — voir `CLAUDE.md`.
+
+À chaque tick, chaque bâtiment placé produit en fonction du stock disponible de ses ressources d'entrée :
 
 ```
 unités_produites = min(capacité, min sur chaque input de stock_disponible / quantité_requise)
 ```
 
-Les ressources marquées `sellPrice` sont vendues automatiquement en fin de tick (stock converti en argent, remis à zéro). L'argent sert à agrandir la capacité d'un bâtiment via `invest()`. Les bâtiments sont traités dans l'ordre du tableau : un bâtiment antérieur peut affamer un bâtiment plus tardif qui consomme la même ressource — limitation connue et acceptée pour une économie à une seule échelle, pas un bug. Voir `src/engine/simulation.test.ts` pour les cas couverts.
+Les ressources marquées `sellPrice` sont vendues automatiquement en fin de tick (stock converti en argent, remis à zéro). Les bâtiments sont traités dans l'ordre de placement : un bâtiment placé plus tôt peut affamer un bâtiment placé plus tard qui consomme la même ressource — limitation connue et acceptée pour une économie à une seule échelle, pas un bug. Voir `src/engine/simulation.test.ts` pour les cas couverts.
 
 ### Contenu vs moteur
 
@@ -41,7 +43,7 @@ Un thème s'exprime entièrement comme un `ContentPack` : liste de ressources, r
 
 ### Assets visuels
 
-Un id moteur (`Resource.id`, `Recipe.id`, `Building.id`) n'a pas de sprite par défaut : `renderTile()` retombe sur un carré coloré placeholder tant qu'aucune entrée n'existe dans le `ThemeAssets` du thème actif. Pour intégrer un pack d'assets (ex. itch.io) :
+Un id moteur (`Resource.id`, `Recipe.id`, `BuildingType.id`) n'a pas de sprite par défaut : `renderTile()` retombe sur un carré coloré placeholder tant qu'aucune entrée n'existe dans le `ThemeAssets` du thème actif. Pour intégrer un pack d'assets (ex. itch.io) :
 
 1. Déposer les fichiers dans `src/assets/themes/<theme-id>/`.
 2. Ajouter les entrées correspondantes dans `src/content/<theme-id>/assets.ts`.

@@ -1,6 +1,6 @@
 body {
   font-family: system-ui, sans-serif;
-  max-width: 720px;
+  max-width: 900px;
   margin: 2rem auto;
   padding: 0 1rem;
 }
@@ -53,6 +53,60 @@ td {
   font-size: 13px;
 }
 
-#buildings-table button {
-  font-size: 12px;
+.palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.palette-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 11px;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+}
+
+.palette-btn--active {
+  border-color: #333;
+  border-width: 2px;
+  background: #eef3ff;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-cols), 34px);
+  gap: 2px;
+  margin-bottom: 1.5rem;
+  width: max-content;
+}
+
+.grid-cell {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f4f4f4;
+  border: 1px solid #ddd;
+}
+
+.grid-cell--empty {
+  background: #fafafa;
+}
+
+.grid-cell--buildable {
+  cursor: pointer;
+  background: #eaffea;
+  border-color: #8bc98b;
+}
+
+.grid-cell--buildable:hover {
+  background: #d3ffd3;
 }
