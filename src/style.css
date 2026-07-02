@@ -1,0 +1,24 @@
+body {
+  font-family: system-ui, sans-serif;
+  max-width: 720px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border: 1px solid #ccc;
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+}
