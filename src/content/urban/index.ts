@@ -17,12 +17,12 @@ export const urbanPack: ContentPack = {
     { id: 'logi-materials', label: 'Matériaux' },
     { id: 'logi-parts', label: 'Pièces détachées' },
     { id: 'logi-packaging', label: 'Emballages' },
-    { id: 'logi-package', label: 'Colis livré', sellPrice: 15 },
+    { id: 'logi-package', label: 'Colis livré', sellPrice: 15, sector: 'logi' },
 
     { id: 'comm-goods', label: 'Marchandises' },
     { id: 'comm-display', label: 'Vitrine garnie' },
-    { id: 'comm-sale', label: 'Vente', sellPrice: 12 },
-    { id: 'comm-sale-premium', label: 'Vente premium', sellPrice: 25 },
+    { id: 'comm-sale', label: 'Vente', sellPrice: 12, sector: 'comm' },
+    { id: 'comm-sale-premium', label: 'Vente premium', sellPrice: 25, sector: 'comm' },
   ],
   recipes: [
     { id: 'logi-extract-scrap', inputs: [], output: { resource: 'logi-scrap', quantity: 1 } },
@@ -68,15 +68,29 @@ export const urbanPack: ContentPack = {
     },
   ],
   buildingTypes: [
-    { id: 'logi-scrapyard', label: 'Casse auto', recipe: 'logi-extract-scrap', capacity: 10, buildCost: 30 },
-    { id: 'logi-warehouse', label: 'Entrepôt', recipe: 'logi-extract-materials', capacity: 8, buildCost: 25 },
-    { id: 'logi-repair-shop', label: 'Atelier de réparation', recipe: 'logi-make-parts', capacity: 4, buildCost: 40 },
-    { id: 'logi-packing-center', label: "Centre d'emballage", recipe: 'logi-make-packaging', capacity: 3, buildCost: 45 },
-    { id: 'logi-delivery-hub', label: 'Centre de livraison', recipe: 'logi-make-package', capacity: 6, buildCost: 60 },
+    { id: 'logi-scrapyard', label: 'Casse auto', recipe: 'logi-extract-scrap', capacity: 10, buildCost: 30, sector: 'logi' },
+    { id: 'logi-warehouse', label: 'Entrepôt', recipe: 'logi-extract-materials', capacity: 8, buildCost: 25, sector: 'logi' },
+    { id: 'logi-repair-shop', label: 'Atelier de réparation', recipe: 'logi-make-parts', capacity: 4, buildCost: 40, sector: 'logi' },
+    {
+      id: 'logi-packing-center',
+      label: "Centre d'emballage",
+      recipe: 'logi-make-packaging',
+      capacity: 3,
+      buildCost: 45,
+      sector: 'logi',
+    },
+    {
+      id: 'logi-delivery-hub',
+      label: 'Centre de livraison',
+      recipe: 'logi-make-package',
+      capacity: 6,
+      buildCost: 60,
+      sector: 'logi',
+    },
 
-    { id: 'comm-wholesaler', label: 'Grossiste', recipe: 'comm-extract-goods', capacity: 12, buildCost: 30 },
-    { id: 'comm-shopfront', label: 'Vitrine', recipe: 'comm-make-display', capacity: 5, buildCost: 40 },
-    { id: 'comm-register', label: 'Caisse', recipe: 'comm-make-sale', capacity: 5, buildCost: 50 },
+    { id: 'comm-wholesaler', label: 'Grossiste', recipe: 'comm-extract-goods', capacity: 12, buildCost: 30, sector: 'comm' },
+    { id: 'comm-shopfront', label: 'Vitrine', recipe: 'comm-make-display', capacity: 5, buildCost: 40, sector: 'comm' },
+    { id: 'comm-register', label: 'Caisse', recipe: 'comm-make-sale', capacity: 5, buildCost: 50, sector: 'comm' },
     {
       id: 'comm-luxury-shopfront',
       label: 'Vitrine de luxe',
@@ -87,8 +101,18 @@ export const urbanPack: ContentPack = {
       capacity: 15,
       buildCost: 150,
       footprint: { width: 3, height: 3 },
+      sector: 'comm',
     },
   ],
   // v1: small fixed grid, no camera/pan — see CLAUDE.md for the phasing rationale.
   grid: { width: 8, height: 8 },
+  sectors: [
+    { id: 'logi', label: 'Logistique', taxSensitivity: 1.15 },
+    { id: 'comm', label: 'Commerce', taxSensitivity: 0.85 },
+  ],
+  // Seed list — more can be added at runtime via addBudgetCategory(), see the dev harness.
+  budgetCategories: [
+    { id: 'schools', label: 'Écoles', weightBySector: { logi: 0.35, comm: 0.65 } },
+    { id: 'health', label: 'Santé', weightBySector: { logi: 0.65, comm: 0.35 } },
+  ],
 };

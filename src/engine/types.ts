@@ -7,6 +7,12 @@ export interface Resource {
    * at the end of every tick and converted to money.
    */
   sellPrice?: number;
+  /**
+   * Sector this final good belongs to (see BuildingType.sector), so its
+   * sale price can be scaled by that sector's budget/satisfaction. Only
+   * meaningful alongside sellPrice.
+   */
+  sector?: string;
 }
 
 export interface RecipeInput {
@@ -36,11 +42,33 @@ export interface BuildingType {
   buildCost: number;
   /** Footprint in grid cells. Defaults to 1x1 when omitted. */
   footprint?: { width: number; height: number };
+  /**
+   * Sector this building belongs to for budget/satisfaction purposes (e.g.
+   * 'logi', 'comm' — matches a ContentPack.sectors entry). Buildings with no
+   * sector are unaffected by the budget system (multiplier stays at 1).
+   */
+  sector?: string;
 }
 
 export interface GridSize {
   width: number;
   height: number;
+}
+
+export interface SectorConfig {
+  id: string;
+  label: string;
+  /** How strongly this sector's satisfaction reacts to the tax rate. Default 1. */
+  taxSensitivity?: number;
+}
+
+export interface BudgetCategory {
+  id: string;
+  label: string;
+  /** Influence on each sector's satisfaction target, 0..1. Need not sum to 1 across categories. */
+  weightBySector: Record<string, number>;
+  /** Money spent per placed building (economy-wide) per tick, at 100% funding. Default 0.5. */
+  costPerBuilding?: number;
 }
 
 export interface ContentPack {
@@ -56,4 +84,12 @@ export interface ContentPack {
    * actuel" for the phasing rationale.
    */
   grid: GridSize;
+  /**
+   * Sectors the budget system tracks satisfaction for. Omit (or leave
+   * building types/resources untagged) to opt a pack out of the budget
+   * system entirely — it's inert unless a pack declares sectors.
+   */
+  sectors?: SectorConfig[];
+  /** Initial budget categories; more can be added at runtime via addBudgetCategory(). */
+  budgetCategories?: BudgetCategory[];
 }

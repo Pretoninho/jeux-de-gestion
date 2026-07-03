@@ -1,4 +1,14 @@
-import { buildingAt, build, createInitialState, footprintOf, tick } from './engine/simulation';
+import {
+  addBudgetCategory,
+  buildingAt,
+  build,
+  createInitialState,
+  footprintOf,
+  multipliersForSatisfaction,
+  setBudgetCategoryLevel,
+  setTaxRate,
+  tick,
+} from './engine/simulation';
 import { GameLoop } from './engine/gameLoop';
 import { urbanPack } from './content/urban';
 import { urbanThemeAssets } from './content/urban/assets';
@@ -48,6 +58,19 @@ app.innerHTML = `
 
   <h2>Stocks</h2>
   <div id="stock-row" class="tile-row"></div>
+
+  <h2>Budget municipal</h2>
+  <p>Impôts et dépenses publiques modulent la satisfaction de chaque secteur, qui glisse vers sa cible au lieu de sauter — voir <code>CLAUDE.md</code>.</p>
+  <div class="budget-panel">
+    <div class="budget-row">
+      <span class="budget-row__label">Impôts</span>
+      <output id="tax-reading" class="budget-row__reading">0 %</output>
+    </div>
+    <input type="range" id="tax-slider" min="0" max="100" value="0" class="budget-slider" aria-label="Taux d'imposition">
+    <div id="categories-list" class="categories"></div>
+    <button id="add-category" type="button" class="add-btn">+ Catégorie</button>
+  </div>
+  <div id="gauges" class="gauges"></div>
 `;
 
 const moneyEl = app.querySelector('#money')!;
@@ -56,6 +79,11 @@ const paletteEl = app.querySelector<HTMLDivElement>('#palette')!;
 const gridEl = app.querySelector<HTMLDivElement>('#grid')!;
 const stockRow = app.querySelector<HTMLDivElement>('#stock-row')!;
 const toggleBtn = app.querySelector<HTMLButtonElement>('#toggle')!;
+const taxSlider = app.querySelector<HTMLInputElement>('#tax-slider')!;
+const taxReading = app.querySelector<HTMLOutputElement>('#tax-reading')!;
+const categoriesListEl = app.querySelector<HTMLDivElement>('#categories-list')!;
+const addCategoryBtn = app.querySelector<HTMLButtonElement>('#add-category')!;
+const gaugesEl = app.querySelector<HTMLDivElement>('#gauges')!;
 
 function renderPalette(): void {
   paletteEl.innerHTML = '';
@@ -77,6 +105,75 @@ function renderPalette(): void {
 }
 
 const groundCss = urbanThemeAssets.ground ? spriteToCss(urbanThemeAssets.ground) : null;
+
+// Category rows and gauge shells are only rebuilt on structural change (init, +Catégorie) — never
+// every tick, since these hold <input type="range"> elements a full rebuild would interrupt mid-drag.
+function renderCategories(): void {
+  categoriesListEl.innerHTML = '';
+  for (const category of state.budgetCategories) {
+    const row = document.createElement('div');
+    row.className = 'category';
+
+    const head = document.createElement('div');
+    head.className = 'category__head';
+    const label = document.createElement('span');
+    label.className = 'category__label';
+    label.textContent = category.label;
+    const reading = document.createElement('output');
+    reading.textContent = `${category.level} %`;
+    head.append(label, reading);
+
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.min = '0';
+    slider.max = '100';
+    slider.value = String(category.level);
+    slider.className = 'budget-slider';
+    slider.setAttribute('aria-label', `Niveau de financement — ${category.label}`);
+    slider.addEventListener('input', () => {
+      setBudgetCategoryLevel(state, category.id, Number(slider.value));
+      reading.textContent = `${slider.value} %`;
+    });
+
+    row.append(head, slider);
+    categoriesListEl.appendChild(row);
+  }
+}
+
+function renderGaugeShells(): void {
+  gaugesEl.innerHTML = (pack.sectors ?? [])
+    .map(
+      (sector) => `
+        <div class="gauge">
+          <div class="gauge__head">
+            <span class="gauge__name">${sector.label}</span>
+            <span class="gauge__value" id="satisfaction-${sector.id}">50</span>
+          </div>
+          <div class="gauge__track"><div class="gauge__fill" id="fill-${sector.id}"></div></div>
+          <div class="gauge__mults">
+            <span>Capacité <b id="cap-${sector.id}">×1.00</b></span>
+            <span>Prix <b id="price-${sector.id}">×1.00</b></span>
+          </div>
+        </div>
+      `,
+    )
+    .join('');
+}
+
+function updateGauges(): void {
+  for (const sector of pack.sectors ?? []) {
+    const value = state.satisfactionBySector[sector.id] ?? 50;
+    const mults = multipliersForSatisfaction(value);
+    const valueEl = document.getElementById(`satisfaction-${sector.id}`);
+    const fillEl = document.getElementById(`fill-${sector.id}`);
+    const capEl = document.getElementById(`cap-${sector.id}`);
+    const priceEl = document.getElementById(`price-${sector.id}`);
+    if (valueEl) valueEl.textContent = Math.round(value).toString();
+    if (fillEl) fillEl.style.width = `${value}%`;
+    if (capEl) capEl.textContent = `×${mults.capacity.toFixed(2)}`;
+    if (priceEl) priceEl.textContent = `×${mults.price.toFixed(2)}`;
+  }
+}
 
 function renderGrid(): void {
   gridEl.innerHTML = '';
@@ -123,6 +220,7 @@ function render(tickCount = 0): void {
   tickCountEl.textContent = String(tickCount);
   renderPalette();
   renderGrid();
+  updateGauges();
 
   stockRow.innerHTML = '';
   for (const resource of pack.resources) {
@@ -155,4 +253,23 @@ app.querySelector('#speed-1')!.addEventListener('click', () => loop.setSpeed(1))
 app.querySelector('#speed-2')!.addEventListener('click', () => loop.setSpeed(2));
 app.querySelector('#speed-5')!.addEventListener('click', () => loop.setSpeed(5));
 
+taxSlider.addEventListener('input', () => {
+  setTaxRate(state, Number(taxSlider.value));
+  taxReading.textContent = `${taxSlider.value} %`;
+});
+
+addCategoryBtn.addEventListener('click', () => {
+  const label = prompt('Nom de la nouvelle catégorie de dépense ?');
+  if (!label) return;
+  const weightBySector: Record<string, number> = {};
+  for (const sector of pack.sectors ?? []) {
+    const raw = prompt(`Poids de "${label}" sur le secteur "${sector.label}" (0 à 1) ?`, '0.5');
+    weightBySector[sector.id] = Number(raw) || 0;
+  }
+  addBudgetCategory(state, { id: `custom-${Date.now()}`, label, weightBySector });
+  renderCategories();
+});
+
+renderCategories();
+renderGaugeShells();
 render();
