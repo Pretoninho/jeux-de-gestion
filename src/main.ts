@@ -12,7 +12,8 @@ import {
 import { GameLoop } from './engine/gameLoop';
 import { medievalPack } from './content/medieval';
 import { medievalThemeAssets } from './content/medieval/assets';
-import { renderTile, spriteToCss } from './presentation/tile';
+import { medievalTerrain } from './content/medieval/terrain';
+import { renderTile, spriteToCss, type SpriteCss } from './presentation/tile';
 
 /**
  * This file is a throwaway dev harness proving the engine, the medieval content
@@ -21,8 +22,7 @@ import { renderTile, spriteToCss } from './presentation/tile';
  */
 
 const pack = medievalPack;
-/** Ring of decorative, non-buildable water tiles wrapped around pack.grid — presentation only. */
-const WATER_BORDER = 1;
+const terrain = medievalTerrain;
 const resourceById = new Map(pack.resources.map((r) => [r.id, r]));
 const recipeById = new Map(pack.recipes.map((r) => [r.id, r]));
 const typeById = new Map(pack.buildingTypes.map((t) => [t.id, t]));
@@ -59,7 +59,7 @@ function startNewGame(): void {
 
   app.innerHTML = `
     <section class="grid-section">
-      <div id="grid" class="grid" style="--grid-cols: ${pack.grid.width + WATER_BORDER * 2}"></div>
+      <div id="grid" class="grid" style="--grid-cols: ${terrain.width}"></div>
     </section>
 
     <header class="hero">
@@ -121,10 +121,8 @@ function startNewGame(): void {
   // rectangular grid fills the screen edge to edge instead of being capped by
   // the smaller axis alone.
   function updateGridSize(): void {
-    const totalCols = pack.grid.width + WATER_BORDER * 2;
-    const totalRows = pack.grid.height + WATER_BORDER * 2;
-    const cellFromWidth = (window.innerWidth - 2 * (totalCols - 1)) / totalCols;
-    const cellFromHeight = (window.innerHeight - 2 * (totalRows - 1)) / totalRows;
+    const cellFromWidth = (window.innerWidth - 2 * (terrain.width - 1)) / terrain.width;
+    const cellFromHeight = (window.innerHeight - 2 * (terrain.height - 1)) / terrain.height;
     const cellSize = Math.floor(Math.min(cellFromWidth, cellFromHeight));
     gridEl.style.setProperty('--cell-size', `${cellSize}px`);
   }
@@ -150,8 +148,14 @@ function startNewGame(): void {
     }
   }
 
-  const groundCss = medievalThemeAssets.ground ? spriteToCss(medievalThemeAssets.ground) : null;
-  const waterCss = medievalThemeAssets.waterBorder ? spriteToCss(medievalThemeAssets.waterBorder) : null;
+  const terrainCssCache = new Map<string, SpriteCss | null>();
+  function terrainCss(tileId: string): SpriteCss | null {
+    if (!terrainCssCache.has(tileId)) {
+      const sprite = medievalThemeAssets.sprites[tileId];
+      terrainCssCache.set(tileId, sprite ? spriteToCss(sprite) : null);
+    }
+    return terrainCssCache.get(tileId) ?? null;
+  }
 
   // Category rows and gauge shells are only rebuilt on structural change (init, +Catégorie) — never
   // every tick, since these hold <input type="range"> elements a full rebuild would interrupt mid-drag.
@@ -234,21 +238,21 @@ function startNewGame(): void {
 
   function renderGrid(): void {
     gridEl.innerHTML = '';
-    const totalCols = pack.grid.width + WATER_BORDER * 2;
-    const totalRows = pack.grid.height + WATER_BORDER * 2;
 
-    for (let worldY = 0; worldY < totalRows; worldY++) {
-      for (let worldX = 0; worldX < totalCols; worldX++) {
+    for (let worldY = 0; worldY < terrain.height; worldY++) {
+      for (let worldX = 0; worldX < terrain.width; worldX++) {
         // Land coordinates (what build()/buildingAt() understand) vs. world
-        // coordinates (what's actually rendered, offset by the water border).
-        const x = worldX - WATER_BORDER;
-        const y = worldY - WATER_BORDER;
+        // coordinates (what's actually rendered, offset by the terrain map's
+        // buildableOffsetX/Y — see tools/map-editor).
+        const x = worldX - terrain.buildableOffsetX;
+        const y = worldY - terrain.buildableOffsetY;
         const isLand = x >= 0 && x < pack.grid.width && y >= 0 && y < pack.grid.height;
+        const css = terrainCss(terrain.tiles[worldY]?.[worldX] ?? 'terrain-grass');
 
         if (!isLand) {
           const cell = document.createElement('div');
-          cell.className = 'grid-cell grid-cell--water';
-          if (waterCss) Object.assign(cell.style, waterCss);
+          cell.className = 'grid-cell grid-cell--decorative';
+          if (css) Object.assign(cell.style, css);
           gridEl.appendChild(cell);
           continue;
         }
@@ -261,7 +265,7 @@ function startNewGame(): void {
 
         const cell = document.createElement('div');
         cell.className = 'grid-cell';
-        if (groundCss) Object.assign(cell.style, groundCss);
+        if (css) Object.assign(cell.style, css);
 
         if (placed) {
           const type = typeById.get(placed.type)!;

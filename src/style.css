@@ -238,7 +238,7 @@ button:disabled {
   border: 1px solid #ddd;
 }
 
-.grid-cell--water {
+.grid-cell--decorative {
   border: none;
   background-color: var(--water);
 }

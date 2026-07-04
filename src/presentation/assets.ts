@@ -34,12 +34,12 @@ export type SpriteRef = FlatSpriteRef | CompositeSpriteRef;
 export interface ThemeAssets {
   /** Canonical render size in px for one tile/icon. 32 unless a theme overrides it. */
   tileSize: number;
-  /** Keyed by engine id (Resource.id, Tier.id, Recipe.id, ...). Missing entries fall back to a placeholder tile. */
+  /**
+   * Keyed by engine id (Resource.id, Tier.id, Recipe.id, ...) or by a terrain tile id
+   * (TerrainTileId, conventionally prefixed 'terrain-', see presentation/terrain.ts).
+   * Missing entries fall back to a placeholder tile.
+   */
   sprites: Partial<Record<string, SpriteRef>>;
-  /** Ground tile painted under every grid cell. Not keyed by an engine id — there's only one. */
-  ground?: SpriteRef;
-  /** Coastline tile painted around the buildable grid, decorative only (not part of ContentPack.grid). */
-  waterBorder?: SpriteRef;
 }
 
 export const DEFAULT_TILE_SIZE = 32;

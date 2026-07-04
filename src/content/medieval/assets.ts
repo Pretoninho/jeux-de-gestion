@@ -1,8 +1,9 @@
 import type { ThemeAssets } from '../../presentation/assets';
 import { DEFAULT_TILE_SIZE } from '../../presentation/assets';
 
-import ground from '../../assets/themes/medieval/tiny-swords/ground-grass.png';
-import waterBorder from '../../assets/themes/medieval/tiny-swords/water-foam.png';
+import grassTile from '../../assets/themes/medieval/tiny-swords/ground-grass.png';
+import waterFoamTile from '../../assets/themes/medieval/tiny-swords/water-foam.png';
+import waterPlainTile from '../../assets/themes/medieval/tiny-swords/water-plain.png';
 import wood from '../../assets/themes/medieval/tiny-swords/terrain-resources-wood-wood-resource-wood-resource.png';
 import goldOre from '../../assets/themes/medieval/tiny-swords/terrain-resources-gold-gold-stones-gold-stone-1.png';
 import goldIngot from '../../assets/themes/medieval/tiny-swords/terrain-resources-gold-gold-resource-gold-resource.png';
@@ -37,12 +38,14 @@ import fortressCastle from '../../assets/themes/medieval/tiny-swords/buildings-r
  */
 export const medievalThemeAssets: ThemeAssets = {
   tileSize: DEFAULT_TILE_SIZE,
-  ground: { kind: 'image', src: ground },
-  // A single foam animation frame (Water Foam.png, frame 12/16) used statically as the
-  // coastline tile around the buildable grid — see the pack's tilemap guide (devlog) for
-  // the full layer recipe (BG color -> foam -> flat ground); simplified here to one ring.
-  waterBorder: { kind: 'image', src: waterBorder },
   sprites: {
+    // Terrain tiles, painted per-cell via tools/map-editor (src/content/medieval/terrain.ts) —
+    // 'terrain-water-foam' is a single frozen frame of Water Foam.png's 16-frame loop (frame
+    // 12/16), see the pack's tilemap guide (devlog) for the full layer recipe this simplifies.
+    'terrain-grass': { kind: 'image', src: grassTile },
+    'terrain-water': { kind: 'image', src: waterPlainTile },
+    'terrain-water-foam': { kind: 'image', src: waterFoamTile },
+
     'craft-wood': { kind: 'image', src: wood },
     'craft-gold-ore': { kind: 'image', src: goldOre },
     'craft-ingots': { kind: 'image', src: goldIngot },

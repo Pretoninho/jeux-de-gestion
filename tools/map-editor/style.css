@@ -1,0 +1,113 @@
+body {
+  font-family: system-ui, sans-serif;
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 0 1rem 3rem;
+  color: #222;
+}
+
+h1 {
+  margin-bottom: 0.2rem;
+}
+
+.hint {
+  color: #666;
+  font-size: 13px;
+}
+
+.row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 0.75rem 0;
+}
+
+.row label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 12px;
+  color: #555;
+}
+
+.row input[type='number'] {
+  width: 4.5rem;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+button {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #999;
+  border-radius: 4px;
+  background: #f5f5f5;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #eee;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.chip {
+  padding: 0.3rem 0.8rem;
+  border: 1px solid #999;
+  border-radius: 100px;
+  background: #f5f5f5;
+  font-size: 12px;
+  text-transform: capitalize;
+}
+
+.chip--active {
+  background: #5b8dff;
+  border-color: #5b8dff;
+  color: white;
+}
+
+#grid-wrap {
+  overflow: auto;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 0.5rem;
+  max-height: 70vh;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 28px);
+  grid-auto-rows: 28px;
+  gap: 1px;
+  width: max-content;
+}
+
+.tile-cell {
+  width: 28px;
+  height: 28px;
+  background-color: #eee;
+  background-size: cover;
+  image-rendering: pixelated;
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.tile-cell:hover {
+  outline: 2px solid #5b8dff;
+}
+
+.tile-cell--locked {
+  cursor: not-allowed;
+  outline: 2px dashed rgba(0, 0, 0, 0.3);
+  outline-offset: -2px;
+}
+
+.tile-cell--locked:hover {
+  outline: 2px dashed rgba(0, 0, 0, 0.3);
+}

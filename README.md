@@ -64,6 +64,12 @@ Outil de dev — jamais expédié avec le jeu (exclu du build de production, end
 
 Accès : `npm run dev` puis ouvrir `/tools/asset-composer/index.html`. Si un id composé existe déjà comme entrée manuscrite ailleurs dans le fichier, la retirer à la main (TypeScript refusera sinon une clé dupliquée).
 
+### Éditeur de carte (`tools/map-editor/`)
+
+Outil de dev — mêmes garanties que l'asset composer (jamais expédié, endpoints dev only). Peint la carte de terrain décorative (`src/content/medieval/terrain.ts`, type `TerrainMap` dans `src/presentation/terrain.ts`) autour du rectangle constructible (`pack.grid`, affiché verrouillé en herbe) : choisir une tuile dans la palette (découverte automatiquement parmi les ids `terrain-*` du thème), cliquer les cases à peindre, ajuster largeur/hauteur/décalage du rectangle constructible si besoin, puis **Enregistrer** régénère tout `terrain.ts`. Purement présentationnel — le moteur ne connaît jamais cette carte, seul `pack.grid` compte pour la construction.
+
+Accès : `npm run dev` puis ouvrir `/tools/map-editor/index.html`.
+
 ## Développement
 
 ```
