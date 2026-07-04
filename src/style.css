@@ -45,9 +45,21 @@ body {
   max-width: 32rem;
 }
 
+.landing-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
 .landing button {
   font-size: 1.1rem;
   padding: 0.6rem 1.6rem;
+}
+
+.landing .secondary-btn {
+  font-size: 0.85rem;
+  padding: 0.4rem 1rem;
 }
 
 .hero {
@@ -233,7 +245,9 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f4f4f4;
+  /* Fallback shows through the water-foam sprite's transparent corners — matches the
+     water it's meant to sit against, so the coastline reads as continuous, not gappy. */
+  background-color: var(--water);
   image-rendering: pixelated;
   border: 1px solid #ddd;
 }
