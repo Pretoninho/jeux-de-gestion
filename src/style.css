@@ -1,14 +1,88 @@
+:root {
+  --parchment: #f2e6c9;
+  --parchment-dark: #e6d5a8;
+  --wood: #6b4a2f;
+  --wood-dark: #4a3220;
+  --ink: #3a2b1a;
+  --muted: #7a6a52;
+  --good: #2e7d32;
+  --warn: #a86a12;
+  --danger: #b73b3b;
+  --btn-regular: url('./assets/themes/medieval/tiny-swords/ui/button-regular.png');
+  --btn-pressed: url('./assets/themes/medieval/tiny-swords/ui/button-pressed.png');
+  --bar-base: url('./assets/themes/medieval/tiny-swords/ui/bar-base.png');
+  --bar-fill: url('./assets/themes/medieval/tiny-swords/ui/bar-fill.png');
+}
+
 body {
   font-family: system-ui, sans-serif;
   max-width: 900px;
-  margin: 2rem auto;
-  padding: 0 1rem;
+  margin: 0 auto;
+  padding: 1rem 1rem 3rem;
+  background: var(--parchment);
+  color: var(--ink);
+}
+
+.hero {
+  margin-bottom: 1.25rem;
+}
+
+.hero h1 {
+  margin: 0 0 0.2rem;
+  font-size: 2rem;
+  letter-spacing: 0.02em;
+}
+
+.tagline {
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.status-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.status-chip {
+  background: var(--parchment-dark);
+  border: 1px solid var(--wood);
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.9rem;
+}
+
+.status-chip strong {
+  font-variant-numeric: tabular-nums;
+}
+
+section {
+  background: var(--parchment-dark);
+  border: 1px solid var(--wood);
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+  margin-bottom: 1.25rem;
+}
+
+section h2 {
+  margin-top: 0;
+  color: var(--wood-dark);
+  font-size: 1.05rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 0.88rem;
 }
 
 .controls {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.25rem;
 }
 
 table {
@@ -56,8 +130,7 @@ td {
 .palette {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: 0.6rem;
 }
 
 .palette-btn {
@@ -66,24 +139,50 @@ td {
   align-items: center;
   gap: 0.3rem;
   font-size: 11px;
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background: white;
-  cursor: pointer;
 }
 
 .palette-btn--active {
-  border-color: #333;
-  border-width: 2px;
-  background: #eef3ff;
+  filter: brightness(1.15) saturate(1.2);
+}
+
+/* Buttons reskinned with a real 9-slice panel from the Tiny Swords UI kit —
+   border-image so the same texture scales cleanly to any button size. */
+button {
+  font: inherit;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  background: transparent;
+  border-style: solid;
+  border-width: 14px;
+  border-image-source: var(--btn-regular);
+  border-image-slice: 64 fill;
+  border-image-width: 14px;
+  border-image-repeat: stretch;
+  padding: 0.3rem 0.7rem;
+  cursor: pointer;
+  image-rendering: pixelated;
+}
+
+button:active {
+  border-image-source: var(--btn-pressed);
+}
+
+button:disabled {
+  filter: grayscale(0.7) brightness(0.8);
+  cursor: not-allowed;
+  text-shadow: none;
+}
+
+.add-btn {
+  align-self: flex-start;
+  font-size: 0.8rem;
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(var(--grid-cols), 34px);
   gap: 2px;
-  margin-bottom: 1.5rem;
   width: max-content;
 }
 
@@ -111,13 +210,8 @@ td {
 .budget-panel {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.6rem;
   max-width: 480px;
-  margin-bottom: 1rem;
-  padding: 0.85rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fafafa;
 }
 
 .budget-row {
@@ -152,7 +246,7 @@ td {
   flex-direction: column;
   gap: 0.25rem;
   padding-top: 0.6rem;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--wood);
 }
 
 .category:first-child {
@@ -170,25 +264,15 @@ td {
   font-weight: 600;
 }
 
-.add-btn {
-  align-self: flex-start;
-  font-size: 0.8rem;
-  padding: 0.3rem 0.7rem;
-  border-radius: 999px;
-}
-
 .gauges {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  gap: 0.9rem;
+  margin-top: 0.9rem;
 }
 
 .gauge {
   flex: 1 1 220px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 0.7rem 0.85rem;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
@@ -207,27 +291,51 @@ td {
   font-size: 1.1rem;
 }
 
+/* The wooden bar frame is a real 3-slice texture (left cap / stretch / right cap);
+   the fill sits inside it and only needs its own color, not a border. */
 .gauge__track {
-  height: 8px;
-  border-radius: 999px;
-  background: #e5e5e5;
+  height: 22px;
+  border-style: solid;
+  border-width: 0 16px;
+  border-image-source: var(--bar-base);
+  border-image-slice: 0 64 0 64 fill;
+  border-image-width: 0 16px;
+  border-image-repeat: stretch;
+  image-rendering: pixelated;
+  position: relative;
   overflow: hidden;
 }
 
 .gauge__fill {
-  height: 100%;
-  background: #4caf50;
-  transition: width 0.4s ease-out;
+  position: absolute;
+  inset: 0 auto 0 0;
+  background-image: var(--bar-fill);
+  background-repeat: repeat-x;
+  background-size: auto 100%;
+  transition: width 0.4s ease-out, filter 0.3s ease-out;
+  image-rendering: pixelated;
+}
+
+.gauge__fill--good {
+  filter: hue-rotate(75deg) saturate(1.3);
+}
+
+.gauge__fill--warn {
+  filter: hue-rotate(25deg) saturate(1.4) brightness(1.1);
+}
+
+.gauge__fill--danger {
+  filter: none;
 }
 
 .gauge__mults {
   display: flex;
   gap: 0.9rem;
   font-size: 0.78rem;
-  color: #666;
+  color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 
 .gauge__mults b {
-  color: #222;
+  color: var(--ink);
 }

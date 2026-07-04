@@ -40,37 +40,52 @@ const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('#app not found');
 
 app.innerHTML = `
-  <h1>Moteur — harnais de développement</h1>
-  <p>Pack: <strong>${pack.label}</strong> — argent: <strong id="money">0</strong> — tick <span id="tick-count">0</span></p>
-  <div class="controls">
-    <button id="toggle">Démarrer</button>
-    <button id="speed-1">x1</button>
-    <button id="speed-2">x2</button>
-    <button id="speed-5">x5</button>
-  </div>
-
-  <h2>Construire</h2>
-  <p>Sélectionne un type de bâtiment puis clique une case vide de la grille. Pas de démolition/déplacement pour l'instant (v1 volontairement modeste, voir <code>CLAUDE.md</code>).</p>
-  <div id="palette" class="palette"></div>
-
-  <h2>Grille (${pack.grid.width}×${pack.grid.height})</h2>
-  <div id="grid" class="grid" style="--grid-cols: ${pack.grid.width}"></div>
-
-  <h2>Stocks</h2>
-  <div id="stock-row" class="tile-row"></div>
-
-  <h2>Budget municipal</h2>
-  <p>Impôts et dépenses publiques modulent la satisfaction de chaque secteur, qui glisse vers sa cible au lieu de sauter — voir <code>CLAUDE.md</code>.</p>
-  <div class="budget-panel">
-    <div class="budget-row">
-      <span class="budget-row__label">Impôts</span>
-      <output id="tax-reading" class="budget-row__reading">0 %</output>
+  <header class="hero">
+    <h1>Le Royaume</h1>
+    <p class="tagline">Bâtis ton domaine médiéval — artisanat, garnison, et la pression du budget municipal.</p>
+    <div class="status-bar">
+      <span class="status-chip">💰 <strong id="money">0</strong></span>
+      <span class="status-chip">⏱ tick <strong id="tick-count">0</strong></span>
+      <span class="status-chip">🏰 ${pack.label}</span>
     </div>
-    <input type="range" id="tax-slider" min="0" max="100" value="0" class="budget-slider" aria-label="Taux d'imposition">
-    <div id="categories-list" class="categories"></div>
-    <button id="add-category" type="button" class="add-btn">+ Catégorie</button>
-  </div>
-  <div id="gauges" class="gauges"></div>
+    <div class="controls">
+      <button id="toggle">Démarrer</button>
+      <button id="speed-1">x1</button>
+      <button id="speed-2">x2</button>
+      <button id="speed-5">x5</button>
+    </div>
+  </header>
+
+  <section>
+    <h2>Construire</h2>
+    <p class="hint">Choisis un bâtiment, puis pose-le sur une case libre du domaine.</p>
+    <div id="palette" class="palette"></div>
+  </section>
+
+  <section>
+    <h2>Domaine (${pack.grid.width}×${pack.grid.height})</h2>
+    <div id="grid" class="grid" style="--grid-cols: ${pack.grid.width}"></div>
+  </section>
+
+  <section>
+    <h2>Réserves</h2>
+    <div id="stock-row" class="tile-row"></div>
+  </section>
+
+  <section>
+    <h2>Budget municipal</h2>
+    <p class="hint">Impôts et dépenses publiques modulent la satisfaction de chaque secteur — les effets d'une décision mettent quelques instants à se faire sentir, et autant à se corriger.</p>
+    <div class="budget-panel">
+      <div class="budget-row">
+        <span class="budget-row__label">Impôts</span>
+        <output id="tax-reading" class="budget-row__reading">0 %</output>
+      </div>
+      <input type="range" id="tax-slider" min="0" max="100" value="0" class="budget-slider" aria-label="Taux d'imposition">
+      <div id="categories-list" class="categories"></div>
+      <button id="add-category" type="button" class="add-btn">+ Catégorie</button>
+    </div>
+    <div id="gauges" class="gauges"></div>
+  </section>
 `;
 
 const moneyEl = app.querySelector('#money')!;
@@ -160,6 +175,12 @@ function renderGaugeShells(): void {
     .join('');
 }
 
+function toneFor(value: number): 'good' | 'warn' | 'danger' {
+  if (value >= 60) return 'good';
+  if (value >= 35) return 'warn';
+  return 'danger';
+}
+
 function updateGauges(): void {
   for (const sector of pack.sectors ?? []) {
     const value = state.satisfactionBySector[sector.id] ?? 50;
@@ -169,7 +190,11 @@ function updateGauges(): void {
     const capEl = document.getElementById(`cap-${sector.id}`);
     const priceEl = document.getElementById(`price-${sector.id}`);
     if (valueEl) valueEl.textContent = Math.round(value).toString();
-    if (fillEl) fillEl.style.width = `${value}%`;
+    if (fillEl) {
+      fillEl.style.width = `${value}%`;
+      fillEl.classList.remove('gauge__fill--good', 'gauge__fill--warn', 'gauge__fill--danger');
+      fillEl.classList.add(`gauge__fill--${toneFor(value)}`);
+    }
     if (capEl) capEl.textContent = `×${mults.capacity.toFixed(2)}`;
     if (priceEl) priceEl.textContent = `×${mults.price.toFixed(2)}`;
   }
