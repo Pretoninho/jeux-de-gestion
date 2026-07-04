@@ -23,6 +23,32 @@ body {
   color: var(--ink);
 }
 
+.landing {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1.2rem;
+  padding: 1.5rem;
+}
+
+.landing h1 {
+  margin: 0;
+  font-size: 2.4rem;
+  letter-spacing: 0.02em;
+}
+
+.landing .tagline {
+  max-width: 32rem;
+}
+
+.landing button {
+  font-size: 1.1rem;
+  padding: 0.6rem 1.6rem;
+}
+
 .hero {
   margin-bottom: 1.25rem;
 }
@@ -179,16 +205,22 @@ button:disabled {
   font-size: 0.8rem;
 }
 
+.grid-section {
+  display: flex;
+  justify-content: center;
+}
+
 .grid {
   display: grid;
-  grid-template-columns: repeat(var(--grid-cols), 34px);
+  grid-template-columns: repeat(var(--grid-cols), var(--cell-size, 34px));
+  grid-auto-rows: var(--cell-size, 34px);
   gap: 2px;
   width: max-content;
 }
 
 .grid-cell {
-  width: 34px;
-  height: 34px;
+  width: var(--cell-size, 34px);
+  height: var(--cell-size, 34px);
   display: flex;
   align-items: center;
   justify-content: center;
