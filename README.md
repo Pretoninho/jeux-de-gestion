@@ -66,9 +66,13 @@ Accès : `npm run dev` puis ouvrir `/tools/asset-composer/index.html`. Si un id 
 
 ### Éditeur de carte (`tools/map-editor/`)
 
-Outil de dev — mêmes garanties que l'asset composer (jamais expédié, endpoints dev only). Peint la carte de terrain décorative (`src/content/medieval/terrain.ts`, type `TerrainMap` dans `src/presentation/terrain.ts`) autour du rectangle constructible (`pack.grid`, affiché verrouillé en herbe) : choisir une tuile dans la palette (découverte automatiquement parmi les ids `terrain-*` du thème), cliquer les cases à peindre, ajuster largeur/hauteur/décalage du rectangle constructible si besoin, puis **Enregistrer** régénère tout `terrain.ts`. Purement présentationnel — le moteur ne connaît jamais cette carte, seul `pack.grid` compte pour la construction.
+Contrairement à l'asset composer, **cet outil est expédié avec le jeu** — il doit fonctionner sur le site déployé, sans serveur. Peint la carte de terrain décorative (type `TerrainMap` dans `src/presentation/terrain.ts`) autour du rectangle constructible (`pack.grid`, affiché verrouillé en herbe) : choisir une tuile dans la palette (découverte automatiquement parmi les ids `terrain-*` du thème), cliquer les cases à peindre, ajuster largeur/hauteur/décalage si besoin. Purement présentationnel — le moteur ne connaît jamais cette carte, seul `pack.grid` compte pour la construction.
 
-Accès : `npm run dev` puis ouvrir `/tools/map-editor/index.html`.
+- **Enregistrer** : sauvegarde dans le `localStorage` du navigateur (`src/presentation/terrainStorage.ts`) — `main.ts` la préfère à la carte par défaut du pack si elle existe. En session `npm run dev` uniquement, écrit aussi directement dans `src/content/medieval/terrain.ts` (même mécanisme que l'asset composer).
+- **Exporter** : copie la carte en JSON dans le presse-papier, pour la transmettre et l'intégrer en dur au projet.
+- **Réinitialiser** : efface la carte sauvegardée et revient à celle du pack.
+
+Accès : bouton "Éditeur de carte" sur l'écran d'arrivée du jeu, ou directement `/tools/map-editor/index.html`.
 
 ## Développement
 

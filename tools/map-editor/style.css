@@ -72,6 +72,30 @@ button:hover {
   color: white;
 }
 
+.danger-btn {
+  border-color: #c94b4b;
+  color: #c94b4b;
+  background: white;
+}
+
+.danger-btn:hover {
+  background: #fdeeee;
+}
+
+.export-area {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-height: 6rem;
+  margin: 0.5rem 0 1rem;
+  padding: 0.5rem;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+}
+
 #grid-wrap {
   overflow: auto;
   border: 1px solid #ddd;

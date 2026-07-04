@@ -76,7 +76,17 @@ Les deux angles tournent en parallèle dans le même `tick()`, chacun avec son p
 
 Conséquence concrète : `startNewGame()` n'affiche plus **que** la grille plein écran (rien d'autre — plus de titre, barre de statut, boutons Démarrer/vitesse, palette, réserves, budget). Tout le HTML/JS correspondant a été retiré de `src/main.ts` (pas juste caché en CSS) — `EconomyState`, `GameLoop`, `build()`/`tick()`, budget/satisfaction ne sont plus du tout référencés dans le harnais pour l'instant ; la grille se peint uniquement depuis `TerrainMap` (`medievalTerrain`), sans notion de bâtiment posé. Le CSS correspondant (`.hero`, `.palette`, `.budget-panel`, `.gauge*`...) est resté dans `style.css` intentionnellement (pas supprimé) — churn inutile vu que ce sera très probablement réintroduit à l'identique aux prochaines étapes. **Piège rencontré et corrigé** : en retirant la classe `.grid-cell--decorative`, son `background-color: var(--water)` a disparu aussi — les coins transparents du sprite de mousse (`terrain-water-foam`) laissaient voir le gris par défaut de `.grid-cell` au lieu de l'eau. Corrigé en mettant `var(--water)` comme fond par défaut de `.grid-cell` lui-même (les sprites opaques comme l'herbe le recouvrent entièrement de toute façon).
 
-**Écran d'arrivée : second bouton "Éditeur de carte"** ajouté sous "Nouvelle partie" (empilés dans `.landing-actions`, pas côte à côte — précision explicite de l'utilisateur), navigue vers `/tools/map-editor/index.html`. Point technique confirmé avec l'utilisateur : ce lien ne fonctionne qu'en dev (`npm run dev`), il 404 sur le site déployé puisque `tools/` est exclu du build de production — accepté comme comportement voulu (l'éditeur sert à **générer** la carte utilisée par les parties, pas à être ouvert par un joueur).
+**Écran d'arrivée : second bouton "Éditeur de carte"** ajouté sous "Nouvelle partie" (empilés dans `.landing-actions`, pas côte à côte — précision explicite de l'utilisateur), navigue vers `/tools/map-editor/index.html`.
+
+**Correction : l'éditeur de carte doit fonctionner sans serveur — IMPLÉMENTÉ (5e passe).** Première version : outil dev-only (404 sur le site déployé), présentée comme acceptée. Faux : l'utilisateur n'a **que** le site déployé (pas de serveur de dev local sur son téléphone) — capture d'écran d'un vrai 404 à l'appui. Confirmé avec lui : l'éditeur doit tourner **entièrement dans le navigateur, sans serveur**.
+- `src/presentation/terrainStorage.ts` : `loadStoredTerrain()`/`saveStoredTerrain()`/`clearStoredTerrain()`, un simple wrapper `localStorage` (clé `jeux-de-gestion:medieval-terrain`) partagé entre le jeu et l'éditeur.
+- **`tools/map-editor/` est maintenant expédié avec le jeu** (contrairement à `tools/asset-composer/`, qui reste dev-only — pas d'équivalent client-only raisonnable pour lui, il écrit des fichiers binaires/imports). `vite.config.ts` ajoute `build.rollupOptions.input` avec les deux pages (`index.html` + `tools/map-editor/index.html`) ; `tools/asset-composer/index.html` reste volontairement absent de cette liste.
+- **Enregistrer** : écrit toujours dans `localStorage` (fonctionne partout, y compris sur le site déployé) ; **en plus**, si `import.meta.env.DEV` (session `npm run dev`), écrit aussi directement dans `src/content/medieval/terrain.ts` via le plugin existant — pratique quand c'est moi qui reprends la main pour rendre une carte permanente.
+- **`src/main.ts`** : `startNewGame()` utilise `loadStoredTerrain() ?? medievalTerrain` — la carte sauvegardée dans le navigateur prime sur celle codée dans le pack, si elle existe.
+- **Exporter** : copie le JSON de la carte dans le presse-papier (repli sur un `<textarea readonly>` sélectionné si l'API clipboard échoue) — pour que l'utilisateur puisse me transmettre une carte conçue sur son téléphone et que je l'intègre en dur au projet.
+- **Réinitialiser** : efface le `localStorage` et revient à la carte par défaut du pack (avec confirmation, geste destructif).
+- Vérifié de bout en bout **sur le vrai build de production** (`vite preview`, pas `npm run dev`) : peindre une case → Enregistrer (aucun appel réseau tenté) → nouvelle partie → la case peinte s'affiche. Exporter → presse-papier vérifié aussi.
+- **Leçon retenue** : avant d'accepter une limitation technique ("ça ne marche qu'en dev"), vérifier explicitement que l'utilisateur a un moyen de contourner cette limitation lui-même — ici, aucun, puisqu'il n'a accès qu'au site déployé.
 
 **Ambition demandée vs scope retenu pour la v1** : l'utilisateur voulait au départ carte scrollable avec caméra + empreintes de bâtiments variables (2x2, 1x3...) + construction ET démolition dès le départ — un vrai chantier de city-builder complet. Après avoir nommé la tension avec le cap "jeu simple qui ne scale pas", **décision : phaser (option 2 choisie explicitement)**. La v1 implémentée reste volontairement modeste :
 - Grille **petite et fixe** (pas de scroll/caméra/pan) ;
@@ -171,14 +181,16 @@ src/engine/{types,simulation,gameLoop}.ts   moteur, zéro dépendance thème/UI
 src/engine/simulation.test.ts               valide build()/tick() (10 tests)
 src/presentation/{assets,tile}.ts           rendu générique + fallback placeholder + sprites composites (N calques)
 src/presentation/terrain.ts                 type TerrainMap (carte de sol décorative, présentation pure)
+src/presentation/terrainStorage.ts           load/save/clear localStorage, partagé jeu <-> éditeur de carte
 src/content/medieval/{index,assets}.ts      pack de contenu (angles artisanat + garnison, grille 6x12) + mapping sprites
-src/content/medieval/terrain.ts             carte de terrain générée (herbe/eau/mousse), éditer via tools/map-editor
+src/content/medieval/terrain.ts             carte de terrain par défaut (herbe/eau/mousse) ; localStorage prime si présent
 src/assets/themes/medieval/                 fichiers image du pack medieval (utilisés dans le jeu)
-src/main.ts                                 harnais de dev : écran d'arrivée + grille plein écran + palette + budget
-tools/asset-composer/                       outil de dev : composition de sprites par calques, écrit dans assets.ts
+src/main.ts                                 harnais de dev : écran d'arrivée + grille plein écran (rien d'autre)
+tools/asset-composer/                       outil de dev only : composition de sprites par calques, écrit dans assets.ts
 tools/asset-composer/tiles/<kit>/           bibliothèque de tuiles par kit (tiny-swords/ actif, rpg-urban-kit/ dormant)
 tools/asset-composer/save-plugin.ts         plugin Vite : endpoints /__asset-composer/{kits,upload-kit,save}, dev only
-tools/map-editor/                           outil de dev : peint la carte de terrain, écrit dans content/medieval/terrain.ts
+tools/map-editor/                           outil EXPÉDIÉ avec le jeu : peint la carte, enregistre en localStorage
+                                             (+ écrit aussi content/medieval/terrain.ts si lancé via npm run dev)
 CREDITS.md                                  licences des assets externes
 .claude/settings.json                       permissions autonomes
 .github/workflows/deploy.yml                déploiement GitHub Pages

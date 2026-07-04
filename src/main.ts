@@ -1,6 +1,7 @@
 import { medievalThemeAssets } from './content/medieval/assets';
 import { medievalTerrain } from './content/medieval/terrain';
 import { spriteToCss, type SpriteCss } from './presentation/tile';
+import { loadStoredTerrain } from './presentation/terrainStorage';
 
 /**
  * This file is a throwaway dev harness proving the engine, the medieval content
@@ -10,8 +11,6 @@ import { spriteToCss, type SpriteCss } from './presentation/tile';
  * Deliberately minimal right now: behind "Nouvelle partie" there is only the
  * map, nothing else — being rebuilt back up piece by piece on request.
  */
-
-const terrain = medievalTerrain;
 
 const appElement = document.querySelector<HTMLDivElement>('#app');
 if (!appElement) throw new Error('#app not found');
@@ -35,6 +34,10 @@ function renderLanding(): void {
 }
 
 function startNewGame(): void {
+  // Prefer a map painted in tools/map-editor (saved to this browser's localStorage,
+  // since the deployed site has no server to write terrain.ts to) over the bundled default.
+  const terrain = loadStoredTerrain() ?? medievalTerrain;
+
   app.innerHTML = `
     <section class="grid-section">
       <div id="grid" class="grid" style="--grid-cols: ${terrain.width}"></div>
