@@ -1,4 +1,4 @@
-import { urbanPack } from '../../src/content/urban';
+import { medievalPack } from '../../src/content/medieval';
 
 interface LayerRef {
   kit: string;
@@ -37,7 +37,7 @@ let activeCategory: string | null = null;
 let categorizeMode = false;
 let categorizingTarget: LayerRef | null = null;
 
-const knownIds = [...urbanPack.resources.map((r) => r.id), ...urbanPack.buildingTypes.map((t) => t.id)];
+const knownIds = [...medievalPack.resources.map((r) => r.id), ...medievalPack.buildingTypes.map((t) => t.id)];
 
 function tileUrl(ref: LayerRef): string {
   return `/tools/asset-composer/tiles/${ref.kit}/${ref.file}`;
@@ -57,7 +57,7 @@ if (!app) throw new Error('#app not found');
 
 app.innerHTML = `
   <h1>Asset Composer</h1>
-  <p class="hint">Outil de dev — pas expédié avec le jeu. Compose des icônes en empilant des tuiles, assigne-les à un id du pack, puis enregistre directement dans <code>src/content/urban/assets.ts</code>.</p>
+  <p class="hint">Outil de dev — pas expédié avec le jeu. Compose des icônes en empilant des tuiles, assigne-les à un id du pack, puis enregistre directement dans <code>src/content/medieval/assets.ts</code>.</p>
 
   <section>
     <h2>Importer un kit</h2>

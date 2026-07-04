@@ -10,17 +10,17 @@ import {
   tick,
 } from './engine/simulation';
 import { GameLoop } from './engine/gameLoop';
-import { urbanPack } from './content/urban';
-import { urbanThemeAssets } from './content/urban/assets';
+import { medievalPack } from './content/medieval';
+import { medievalThemeAssets } from './content/medieval/assets';
 import { renderTile, spriteToCss } from './presentation/tile';
 
 /**
- * This file is a throwaway dev harness proving the engine, the urban content
+ * This file is a throwaway dev harness proving the engine, the medieval content
  * pack, and the game loop wire together end to end. It is not the real UI —
  * that comes later.
  */
 
-const pack = urbanPack;
+const pack = medievalPack;
 const state = createInitialState(pack, 150);
 const resourceById = new Map(pack.resources.map((r) => [r.id, r]));
 const recipeById = new Map(pack.recipes.map((r) => [r.id, r]));
@@ -92,7 +92,7 @@ function renderPalette(): void {
     btn.className = 'palette-btn';
     if (type.id === selectedType) btn.classList.add('palette-btn--active');
     btn.title = formatRecipe(type.recipe);
-    btn.appendChild(renderTile(urbanThemeAssets, type.id, type.label));
+    btn.appendChild(renderTile(medievalThemeAssets, type.id, type.label));
     const label = document.createElement('span');
     label.textContent = `${type.label} (${type.buildCost}💰)`;
     btn.appendChild(label);
@@ -104,7 +104,7 @@ function renderPalette(): void {
   }
 }
 
-const groundCss = urbanThemeAssets.ground ? spriteToCss(urbanThemeAssets.ground) : null;
+const groundCss = medievalThemeAssets.ground ? spriteToCss(medievalThemeAssets.ground) : null;
 
 // Category rows and gauge shells are only rebuilt on structural change (init, +Catégorie) — never
 // every tick, since these hold <input type="range"> elements a full rebuild would interrupt mid-drag.
@@ -199,7 +199,7 @@ function renderGrid(): void {
           cell.style.width = 'auto';
           cell.style.height = 'auto';
         }
-        cell.appendChild(renderTile(urbanThemeAssets, type.id, type.label, multiCell));
+        cell.appendChild(renderTile(medievalThemeAssets, type.id, type.label, multiCell));
         cell.title = `${type.label} — ${(lastProduced[placed.id] ?? 0).toFixed(1)}/tick`;
       } else {
         cell.classList.add('grid-cell--empty');
@@ -226,7 +226,7 @@ function render(tickCount = 0): void {
   for (const resource of pack.resources) {
     const wrapper = document.createElement('div');
     wrapper.className = 'stock-item';
-    wrapper.appendChild(renderTile(urbanThemeAssets, resource.id, resource.label));
+    wrapper.appendChild(renderTile(medievalThemeAssets, resource.id, resource.label));
     const qty = document.createElement('span');
     qty.textContent = (state.stocks[resource.id] ?? 0).toFixed(1);
     wrapper.appendChild(qty);

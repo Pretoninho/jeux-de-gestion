@@ -16,8 +16,8 @@ src/
     assets.ts        types ThemeAssets / SpriteRef (mapping id moteur -> sprite)
     tile.ts           renderTile() : sprite si mappé, sinon placeholder coloré
   content/
-    urban/           pack thématique urbain/proche-futur, construit par angles successifs
-      assets.ts        mapping d'assets du thème urban
+    medieval/        pack thématique médiéval-fantastique, construit par angles successifs
+      assets.ts        mapping d'assets du thème medieval
   assets/
     themes/<id>/     fichiers image par thème, voir assets/README.md
   main.ts           harnais de développement (pas l'UI finale)
@@ -39,7 +39,7 @@ Les ressources marquées `sellPrice` sont vendues automatiquement en fin de tick
 
 ### Contenu vs moteur
 
-Un thème s'exprime entièrement comme un `ContentPack` : liste de ressources, recettes et bâtiments de départ, sans toucher au moteur. Le pack `urban` est construit par "angles" successifs (chaînes cohérentes ajoutées au même pack, ids préfixés par angle pour éviter les collisions) — le premier angle, logistique (`logi-*`), est implémenté ; d'autres angles possibles (commerce, artisanat...) peuvent s'ajouter sans toucher au moteur ni à l'existant.
+Un thème s'exprime entièrement comme un `ContentPack` : liste de ressources, recettes et bâtiments de départ, sans toucher au moteur. Le pack `medieval` est construit par "angles" successifs (chaînes cohérentes ajoutées au même pack, ids préfixés par angle pour éviter les collisions) — artisanat (`craft-*`) et garnison (`garrison-*`) sont implémentés ; d'autres angles peuvent s'ajouter sans toucher au moteur ni à l'existant.
 
 ### Assets visuels
 
@@ -60,7 +60,7 @@ Outil de dev — jamais expédié avec le jeu (exclu du build de production, end
 - **importer un nouveau kit** (nom + sélection de fichiers PNG) sans passer par le code ;
 - composer une icône en empilant plusieurs tuiles avec aperçu en direct ;
 - assigner la composition à un id du pack (`Resource.id`/`BuildingType.id`, autocomplété) ;
-- **enregistrer directement** dans `src/content/urban/assets.ts` (copie les fichiers utilisés dans `src/assets/themes/urban/<kit>/`, régénère les imports et les entrées `sprites` dans une section délimitée par des marqueurs `// asset-composer:...:start/end` — le reste du fichier n'est jamais touché).
+- **enregistrer directement** dans `src/content/medieval/assets.ts` (copie les fichiers utilisés dans `src/assets/themes/medieval/<kit>/`, régénère les imports et les entrées `sprites` dans une section délimitée par des marqueurs `// asset-composer:...:start/end` — le reste du fichier n'est jamais touché).
 
 Accès : `npm run dev` puis ouvrir `/tools/asset-composer/index.html`. Si un id composé existe déjà comme entrée manuscrite ailleurs dans le fichier, la retirer à la main (TypeScript refusera sinon une clé dupliquée).
 

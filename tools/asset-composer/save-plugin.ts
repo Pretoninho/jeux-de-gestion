@@ -6,8 +6,8 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(HERE, '../..');
 const TILES_LIBRARY_DIR = resolve(HERE, 'tiles');
-const GAME_ASSETS_DIR = resolve(PROJECT_ROOT, 'src/assets/themes/urban');
-const ASSETS_TS_PATH = resolve(PROJECT_ROOT, 'src/content/urban/assets.ts');
+const GAME_ASSETS_DIR = resolve(PROJECT_ROOT, 'src/assets/themes/medieval');
+const ASSETS_TS_PATH = resolve(PROJECT_ROOT, 'src/content/medieval/assets.ts');
 
 const IMPORTS_START = '// asset-composer:imports:start';
 const IMPORTS_END = '// asset-composer:imports:end';
@@ -63,7 +63,7 @@ function replaceBetweenMarkers(content: string, startMarker: string, endMarker: 
 
 function generateImports(refs: { kit: string; file: string }[]): string {
   return refs
-    .map((r) => `import ${toVarName(r.kit, r.file)} from '../../assets/themes/urban/${r.kit}/${r.file}';`)
+    .map((r) => `import ${toVarName(r.kit, r.file)} from '../../assets/themes/medieval/${r.kit}/${r.file}';`)
     .join('\n');
 }
 
@@ -203,7 +203,7 @@ export function assetComposerSavePlugin(): Plugin {
         });
       });
 
-      // Write the composed mapping into src/content/urban/assets.ts.
+      // Write the composed mapping into src/content/medieval/assets.ts.
       server.middlewares.use('/__asset-composer/save', (req, res) => {
         if (req.method !== 'POST') {
           res.statusCode = 405;
