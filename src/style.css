@@ -12,13 +12,14 @@
   --btn-pressed: url('./assets/themes/medieval/tiny-swords/ui/button-pressed.png');
   --bar-base: url('./assets/themes/medieval/tiny-swords/ui/bar-base.png');
   --bar-fill: url('./assets/themes/medieval/tiny-swords/ui/bar-fill.png');
+  --water: #47aba9;
 }
 
 body {
   font-family: system-ui, sans-serif;
   max-width: 900px;
   margin: 0 auto;
-  padding: 1rem 1rem 3rem;
+  padding: 0 1rem 3rem;
   background: var(--parchment);
   color: var(--ink);
 }
@@ -50,6 +51,7 @@ body {
 }
 
 .hero {
+  padding-top: 1rem;
   margin-bottom: 1.25rem;
 }
 
@@ -205,9 +207,16 @@ button:disabled {
   font-size: 0.8rem;
 }
 
+/* Breaks out of body's max-width/padding to span the full viewport, edge to edge. */
 .grid-section {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  min-height: 100vh;
   display: flex;
+  align-items: center;
   justify-content: center;
+  background: var(--water);
 }
 
 .grid {
@@ -227,6 +236,11 @@ button:disabled {
   background-color: #f4f4f4;
   image-rendering: pixelated;
   border: 1px solid #ddd;
+}
+
+.grid-cell--water {
+  border: none;
+  background-color: var(--water);
 }
 
 .grid-cell--buildable {

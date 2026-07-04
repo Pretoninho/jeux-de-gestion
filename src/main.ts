@@ -21,6 +21,8 @@ import { renderTile, spriteToCss } from './presentation/tile';
  */
 
 const pack = medievalPack;
+/** Ring of decorative, non-buildable water tiles wrapped around pack.grid — presentation only. */
+const WATER_BORDER = 1;
 const resourceById = new Map(pack.resources.map((r) => [r.id, r]));
 const recipeById = new Map(pack.recipes.map((r) => [r.id, r]));
 const typeById = new Map(pack.buildingTypes.map((t) => [t.id, t]));
@@ -56,6 +58,10 @@ function startNewGame(): void {
   let lastProduced: Record<string, number> = {};
 
   app.innerHTML = `
+    <section class="grid-section">
+      <div id="grid" class="grid" style="--grid-cols: ${pack.grid.width + WATER_BORDER * 2}"></div>
+    </section>
+
     <header class="hero">
       <h1>Le Royaume</h1>
       <div class="status-bar">
@@ -70,10 +76,6 @@ function startNewGame(): void {
         <button id="speed-5">x5</button>
       </div>
     </header>
-
-    <section class="grid-section">
-      <div id="grid" class="grid" style="--grid-cols: ${pack.grid.width}"></div>
-    </section>
 
     <section>
       <h2>Construire</h2>
@@ -114,13 +116,16 @@ function startNewGame(): void {
   const addCategoryBtn = app.querySelector<HTMLButtonElement>('#add-category')!;
   const gaugesEl = app.querySelector<HTMLDivElement>('#gauges')!;
 
-  // Sizes the grid to fill the screen: cell size is derived from the smaller
-  // viewport dimension so the (square) grid always fits, on any device.
+  // Sizes the grid (land + water border) to fill the whole screen: cell size is
+  // the largest square that fits both viewport dimensions independently, so a
+  // rectangular grid fills the screen edge to edge instead of being capped by
+  // the smaller axis alone.
   function updateGridSize(): void {
-    const maxDimension = Math.max(pack.grid.width, pack.grid.height);
-    const gapTotal = 2 * (maxDimension - 1);
-    const available = Math.min(window.innerWidth, window.innerHeight) * 0.94;
-    const cellSize = Math.floor((available - gapTotal) / maxDimension);
+    const totalCols = pack.grid.width + WATER_BORDER * 2;
+    const totalRows = pack.grid.height + WATER_BORDER * 2;
+    const cellFromWidth = (window.innerWidth - 2 * (totalCols - 1)) / totalCols;
+    const cellFromHeight = (window.innerHeight - 2 * (totalRows - 1)) / totalRows;
+    const cellSize = Math.floor(Math.min(cellFromWidth, cellFromHeight));
     gridEl.style.setProperty('--cell-size', `${cellSize}px`);
   }
   updateGridSize();
@@ -146,6 +151,7 @@ function startNewGame(): void {
   }
 
   const groundCss = medievalThemeAssets.ground ? spriteToCss(medievalThemeAssets.ground) : null;
+  const waterCss = medievalThemeAssets.waterBorder ? spriteToCss(medievalThemeAssets.waterBorder) : null;
 
   // Category rows and gauge shells are only rebuilt on structural change (init, +Catégorie) — never
   // every tick, since these hold <input type="range"> elements a full rebuild would interrupt mid-drag.
@@ -228,8 +234,25 @@ function startNewGame(): void {
 
   function renderGrid(): void {
     gridEl.innerHTML = '';
-    for (let y = 0; y < pack.grid.height; y++) {
-      for (let x = 0; x < pack.grid.width; x++) {
+    const totalCols = pack.grid.width + WATER_BORDER * 2;
+    const totalRows = pack.grid.height + WATER_BORDER * 2;
+
+    for (let worldY = 0; worldY < totalRows; worldY++) {
+      for (let worldX = 0; worldX < totalCols; worldX++) {
+        // Land coordinates (what build()/buildingAt() understand) vs. world
+        // coordinates (what's actually rendered, offset by the water border).
+        const x = worldX - WATER_BORDER;
+        const y = worldY - WATER_BORDER;
+        const isLand = x >= 0 && x < pack.grid.width && y >= 0 && y < pack.grid.height;
+
+        if (!isLand) {
+          const cell = document.createElement('div');
+          cell.className = 'grid-cell grid-cell--water';
+          if (waterCss) Object.assign(cell.style, waterCss);
+          gridEl.appendChild(cell);
+          continue;
+        }
+
         const placed = buildingAt(pack, state, x, y);
         // Cell covered by a multi-cell building placed elsewhere: its origin
         // cell (below) renders one stretched tile for the whole footprint —

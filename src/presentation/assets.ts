@@ -38,6 +38,8 @@ export interface ThemeAssets {
   sprites: Partial<Record<string, SpriteRef>>;
   /** Ground tile painted under every grid cell. Not keyed by an engine id — there's only one. */
   ground?: SpriteRef;
+  /** Coastline tile painted around the buildable grid, decorative only (not part of ContentPack.grid). */
+  waterBorder?: SpriteRef;
 }
 
 export const DEFAULT_TILE_SIZE = 32;

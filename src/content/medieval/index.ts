@@ -108,7 +108,9 @@ export const medievalPack: ContentPack = {
     },
   ],
   // v1: small fixed grid, no camera/pan — see CLAUDE.md for the phasing rationale.
-  grid: { width: 8, height: 8 },
+  // Rectangular (not square) to roughly match a phone's portrait aspect ratio once
+  // the presentation layer wraps it in a 1-tile water border (see main.ts).
+  grid: { width: 6, height: 12 },
   sectors: [
     { id: 'craft', label: 'Artisanat', taxSensitivity: 1.15 },
     { id: 'garrison', label: 'Garnison', taxSensitivity: 0.85 },
