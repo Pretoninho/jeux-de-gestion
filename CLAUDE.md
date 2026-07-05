@@ -16,6 +16,7 @@ Jeu de gestion solo, gratuit, déployé sur GitHub Pages (frontend uniquement, p
 - A donné les droits de création/édition de fichiers sans confirmation systématique : voir `.claude/settings.json` (Write/Edit/MultiEdit autorisés, commandes npm/git courantes autorisées, opérations destructives bloquées).
 - Valide par blocs de décision avant implémentation — poser des questions ciblées avant de coder une feature structurante plutôt que de trancher seul.
 - Attend une vérification factuelle réelle avant une affirmation (cf. l'épisode Aske4 ci-dessous) — préférer "je ne suis pas sûr, voici ce que j'ai vérifié" à une confirmation non vérifiée.
+- **Fusion vers `main` systématique** : une fois qu'une passe de travail sur une branche est poussée et vérifiée (tests/`tsc`/build verts), la fusionner vers `main` sans redemander — c'est ce qui déclenche le déploiement GitHub Pages (`.github/workflows/deploy.yml`). Décidé explicitement après avoir dû demander la permission une première fois (l'utilisateur a répondu "Ça doit être systématiquement fait").
 
 ## Décisions d'architecture actées
 
