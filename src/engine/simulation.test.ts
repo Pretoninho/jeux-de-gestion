@@ -102,6 +102,42 @@ describe('build with a multi-cell footprint', () => {
   });
 });
 
+describe('build with terrain elevation', () => {
+  const pack = packWithTypes({
+    buildingTypes: [
+      { id: 'lumberjack', label: 'Lumberjack', recipe: 'extract-wood', capacity: 10, buildCost: 20 },
+      { id: 'mansion', label: 'Mansion', recipe: 'extract-wood', capacity: 10, buildCost: 20, footprint: { width: 2, height: 2 } },
+    ],
+    elevation: [
+      [0, 0, 1, 1],
+      [0, 0, 1, 1],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+    ],
+  });
+
+  it('places a building on a cell whose footprint is entirely at one elevation', () => {
+    const state = createInitialState(pack, 100);
+    const result = build(pack, state, 'lumberjack', 2, 0);
+    expect(result).toEqual({ success: true });
+  });
+
+  it('refuses a footprint straddling two different elevations', () => {
+    const state = createInitialState(pack, 100);
+    const result = build(pack, state, 'mansion', 1, 0);
+    expect(result).toEqual({ success: false, reason: 'uneven-terrain' });
+  });
+
+  it('is unaffected by elevation data when the pack declares none', () => {
+    const flatPack = packWithTypes({
+      buildingTypes: [{ id: 'lumberjack', label: 'Lumberjack', recipe: 'extract-wood', capacity: 10, buildCost: 20 }],
+    });
+    const state = createInitialState(flatPack, 100);
+    const result = build(flatPack, state, 'lumberjack', 1, 1);
+    expect(result).toEqual({ success: true });
+  });
+});
+
 describe('tick', () => {
   it('produces at full capacity for a placed building with no inputs', () => {
     const pack = packWithTypes({

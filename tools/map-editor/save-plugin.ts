@@ -13,6 +13,8 @@ interface TerrainPayload {
   buildableOffsetX: number;
   buildableOffsetY: number;
   tiles: string[][];
+  elevation: (0 | 1)[][];
+  props: (string | null)[][];
 }
 
 function readJsonBody<T>(req: import('node:http').IncomingMessage): Promise<T> {
@@ -32,8 +34,11 @@ function readJsonBody<T>(req: import('node:http').IncomingMessage): Promise<T> {
   });
 }
 
+function formatRows<T>(rows: T[][]): string {
+  return rows.map((row) => `    [${row.map((value) => JSON.stringify(value)).join(', ')}],`).join('\n');
+}
+
 function generateTerrainFile(terrain: TerrainPayload): string {
-  const rows = terrain.tiles.map((row) => `    [${row.map((id) => `'${id}'`).join(', ')}],`).join('\n');
   return `import type { TerrainMap } from '../../presentation/terrain';
 
 /**
@@ -48,7 +53,13 @@ export const medievalTerrain: TerrainMap = {
   buildableOffsetX: ${terrain.buildableOffsetX},
   buildableOffsetY: ${terrain.buildableOffsetY},
   tiles: [
-${rows}
+${formatRows(terrain.tiles)}
+  ],
+  elevation: [
+${formatRows(terrain.elevation)}
+  ],
+  props: [
+${formatRows(terrain.props)}
   ],
 };
 `;

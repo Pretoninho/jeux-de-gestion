@@ -129,7 +129,19 @@ export function buildingAt(pack: ContentPack, state: EconomyState, x: number, y:
 
 export interface BuildResult {
   success: boolean;
-  reason?: 'unknown-type' | 'out-of-bounds' | 'occupied' | 'unaffordable';
+  reason?: 'unknown-type' | 'out-of-bounds' | 'occupied' | 'unaffordable' | 'uneven-terrain';
+}
+
+/** True if every cell under the given footprint shares the same elevation (always true when pack.elevation is unset). */
+function hasUniformElevation(pack: ContentPack, x: number, y: number, width: number, height: number): boolean {
+  if (!pack.elevation) return true;
+  const first = pack.elevation[y]?.[x] ?? 0;
+  for (let py = y; py < y + height; py++) {
+    for (let px = x; px < x + width; px++) {
+      if ((pack.elevation[py]?.[px] ?? 0) !== first) return false;
+    }
+  }
+  return true;
 }
 
 /**
@@ -150,6 +162,9 @@ export function build(pack: ContentPack, state: EconomyState, typeId: string, x:
   const rect: Rect = { x, y, width, height };
   if (state.placedBuildings.some((b) => rectsOverlap(rect, rectOf(pack, b)))) {
     return { success: false, reason: 'occupied' };
+  }
+  if (!hasUniformElevation(pack, x, y, width, height)) {
+    return { success: false, reason: 'uneven-terrain' };
   }
   if (state.money < type.buildCost) return { success: false, reason: 'unaffordable' };
 

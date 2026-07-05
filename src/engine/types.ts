@@ -92,4 +92,12 @@ export interface ContentPack {
   sectors?: SectorConfig[];
   /** Initial budget categories; more can be added at runtime via addBudgetCategory(). */
   budgetCategories?: BudgetCategory[];
+  /**
+   * Optional per-cell elevation, row-major (elevation[y][x]), same dims as
+   * grid — 0 = base level, 1 = raised. Omit for a flat pack: build() only
+   * enforces uniform elevation under a footprint when this is present.
+   * Populated from the active TerrainMap's buildable sub-rectangle (see
+   * src/presentation/terrain.ts) rather than authored by hand on the pack.
+   */
+  elevation?: (0 | 1)[][];
 }

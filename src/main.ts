@@ -1,5 +1,6 @@
 import { medievalThemeAssets } from './content/medieval/assets';
 import { medievalTerrain } from './content/medieval/terrain';
+import { cliffSpriteIdBelow } from './presentation/cliffs';
 import { spriteToCss, type SpriteCss } from './presentation/tile';
 import { loadStoredTerrain } from './presentation/terrainStorage';
 
@@ -73,8 +74,24 @@ function startNewGame(): void {
       for (let x = 0; x < terrain.width; x++) {
         const cell = document.createElement('div');
         cell.className = 'grid-cell';
-        const css = terrainCss(terrain.tiles[y]?.[x] ?? 'terrain-grass');
+        // A cliff wall hanging from the raised cell above fully replaces this
+        // cell's own ground tile — see cliffSpriteIdBelow().
+        const groundId = cliffSpriteIdBelow(terrain.elevation, x, y) ?? terrain.tiles[y]?.[x] ?? 'terrain-grass';
+        const css = terrainCss(groundId);
         if (css) Object.assign(cell.style, css);
+
+        const propId = terrain.props[y]?.[x];
+        if (propId) {
+          const propCss = terrainCss(propId);
+          if (propCss) {
+            const propEl = document.createElement('div');
+            propEl.className = 'grid-cell__prop';
+            Object.assign(propEl.style, propCss);
+            propEl.style.backgroundSize = 'contain';
+            cell.appendChild(propEl);
+          }
+        }
+
         gridEl.appendChild(cell);
       }
     }
