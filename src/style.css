@@ -240,6 +240,7 @@ button:disabled {
 }
 
 .grid-cell {
+  position: relative;
   width: var(--cell-size, 34px);
   height: var(--cell-size, 34px);
   display: flex;
@@ -250,6 +251,20 @@ button:disabled {
   background-color: var(--water);
   image-rendering: pixelated;
   border: 1px solid #ddd;
+}
+
+/* Decorative prop (bush/rock/...), painted slightly larger than the cell and
+   anchored to its bottom edge so it can overflow upward, the same overlap
+   trick the water-foam/cliff sprites use. Purely visual, never affects layout. */
+.grid-cell__prop {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: calc(var(--cell-size, 34px) * 1.4);
+  height: calc(var(--cell-size, 34px) * 1.4);
+  transform: translateX(-50%);
+  pointer-events: none;
+  image-rendering: pixelated;
 }
 
 .grid-cell--decorative {

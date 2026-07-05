@@ -4,6 +4,23 @@ import { DEFAULT_TILE_SIZE } from '../../presentation/assets';
 import grassTile from '../../assets/themes/medieval/tiny-swords/ground-grass.png';
 import waterFoamTile from '../../assets/themes/medieval/tiny-swords/water-foam.png';
 import waterPlainTile from '../../assets/themes/medieval/tiny-swords/water-plain.png';
+import cliffLeft from '../../assets/themes/medieval/tiny-swords/cliff-left.png';
+import cliffMid from '../../assets/themes/medieval/tiny-swords/cliff-mid.png';
+import cliffRight from '../../assets/themes/medieval/tiny-swords/cliff-right.png';
+import cliffSolo from '../../assets/themes/medieval/tiny-swords/cliff-solo.png';
+import propBush1 from '../../assets/themes/medieval/tiny-swords/prop-bush-1.png';
+import propBush2 from '../../assets/themes/medieval/tiny-swords/prop-bush-2.png';
+import propBush3 from '../../assets/themes/medieval/tiny-swords/prop-bush-3.png';
+import propBush4 from '../../assets/themes/medieval/tiny-swords/prop-bush-4.png';
+import propRock1 from '../../assets/themes/medieval/tiny-swords/prop-rock-1.png';
+import propRock2 from '../../assets/themes/medieval/tiny-swords/prop-rock-2.png';
+import propRock3 from '../../assets/themes/medieval/tiny-swords/prop-rock-3.png';
+import propRock4 from '../../assets/themes/medieval/tiny-swords/prop-rock-4.png';
+import propWaterRock1 from '../../assets/themes/medieval/tiny-swords/prop-water-rock-1.png';
+import propWaterRock2 from '../../assets/themes/medieval/tiny-swords/prop-water-rock-2.png';
+import propWaterRock3 from '../../assets/themes/medieval/tiny-swords/prop-water-rock-3.png';
+import propWaterRock4 from '../../assets/themes/medieval/tiny-swords/prop-water-rock-4.png';
+import propDuck from '../../assets/themes/medieval/tiny-swords/prop-duck.png';
 import wood from '../../assets/themes/medieval/tiny-swords/terrain-resources-wood-wood-resource-wood-resource.png';
 import goldOre from '../../assets/themes/medieval/tiny-swords/terrain-resources-gold-gold-stones-gold-stone-1.png';
 import goldIngot from '../../assets/themes/medieval/tiny-swords/terrain-resources-gold-gold-resource-gold-resource.png';
@@ -45,6 +62,29 @@ export const medievalThemeAssets: ThemeAssets = {
     'terrain-grass': { kind: 'image', src: grassTile },
     'terrain-water': { kind: 'image', src: waterPlainTile },
     'terrain-water-foam': { kind: 'image', src: waterFoamTile },
+
+    // Cliff-wall pieces for elevated terrain (src/presentation/cliffs.ts picks
+    // the variant) — each spans 3 cells tall (grass lip + 2 cells of stone),
+    // meant to be positioned overlapping down from a raised cell.
+    'terrain-cliff-left': { kind: 'image', src: cliffLeft },
+    'terrain-cliff-mid': { kind: 'image', src: cliffMid },
+    'terrain-cliff-right': { kind: 'image', src: cliffRight },
+    'terrain-cliff-solo': { kind: 'image', src: cliffSolo },
+
+    // Purely decorative props, painted per-cell via tools/map-editor, never inside the buildable area.
+    'prop-bush-1': { kind: 'image', src: propBush1 },
+    'prop-bush-2': { kind: 'image', src: propBush2 },
+    'prop-bush-3': { kind: 'image', src: propBush3 },
+    'prop-bush-4': { kind: 'image', src: propBush4 },
+    'prop-rock-1': { kind: 'image', src: propRock1 },
+    'prop-rock-2': { kind: 'image', src: propRock2 },
+    'prop-rock-3': { kind: 'image', src: propRock3 },
+    'prop-rock-4': { kind: 'image', src: propRock4 },
+    'prop-water-rock-1': { kind: 'image', src: propWaterRock1 },
+    'prop-water-rock-2': { kind: 'image', src: propWaterRock2 },
+    'prop-water-rock-3': { kind: 'image', src: propWaterRock3 },
+    'prop-water-rock-4': { kind: 'image', src: propWaterRock4 },
+    'prop-duck': { kind: 'image', src: propDuck },
 
     'craft-wood': { kind: 'image', src: wood },
     'craft-gold-ore': { kind: 'image', src: goldOre },

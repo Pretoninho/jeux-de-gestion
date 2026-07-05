@@ -1,39 +1,60 @@
 import { medievalPack } from '../../src/content/medieval';
 import { medievalThemeAssets } from '../../src/content/medieval/assets';
 import { medievalTerrain } from '../../src/content/medieval/terrain';
+import { cliffSpriteIdBelow } from '../../src/presentation/cliffs';
 import { spriteToCss, type SpriteCss } from '../../src/presentation/tile';
-import type { TerrainMap } from '../../src/presentation/terrain';
+import type { ElevationLevel, TerrainMap } from '../../src/presentation/terrain';
 import { clearStoredTerrain, loadStoredTerrain, saveStoredTerrain } from '../../src/presentation/terrainStorage';
 
 /**
- * Hand-paint the decorative terrain around the buildable grid — grass/water/foam
- * per cell. Shipped with the game (unlike tools/asset-composer) so it works on
- * the deployed static site: "Enregistrer" saves to this browser's localStorage,
- * which the game reads on next "Nouvelle partie". In dev (`npm run dev`) it also
- * writes src/content/medieval/terrain.ts directly, for baking a map permanently
- * into the project — see the "Exporter" button for doing that from a deployed session.
+ * Hand-paint the decorative terrain around the buildable grid: ground tile,
+ * elevation (raised cells get a cliff wall where they meet lower ground —
+ * see src/presentation/cliffs.ts) and decorative props (bushes, rocks...),
+ * one editable layer at a time. Shipped with the game (unlike
+ * tools/asset-composer) so it works on the deployed static site:
+ * "Enregistrer" saves to this browser's localStorage, which the game reads
+ * on next "Nouvelle partie". In dev (`npm run dev`) it also writes
+ * src/content/medieval/terrain.ts directly, for baking a map permanently
+ * into the project — see the "Exporter" button for doing that from a
+ * deployed session.
  */
 
 const GRASS_ID = 'terrain-grass';
-const DEFAULT_BRUSH = 'terrain-water-foam';
+const DEFAULT_TERRAIN_BRUSH = 'terrain-water-foam';
 
 // Discovered from the theme rather than hardcoded, so a future terrain tile
 // (rocks, bushes...) added to assets.ts shows up in the palette automatically.
-const terrainTileIds = Object.keys(medievalThemeAssets.sprites).filter((id) => id.startsWith('terrain-'));
+const terrainTileIds = Object.keys(medievalThemeAssets.sprites).filter((id) => id.startsWith('terrain-') && !id.startsWith('terrain-cliff-'));
+const propIds = Object.keys(medievalThemeAssets.sprites).filter((id) => id.startsWith('prop-'));
 
-function cloneTerrain(t: TerrainMap): TerrainMap {
-  return { ...t, tiles: t.tiles.map((row) => [...row]) };
-}
+type Mode = 'terrain' | 'elevation' | 'props';
+const MODES: { id: Mode; label: string }[] = [
+  { id: 'terrain', label: 'Sol' },
+  { id: 'elevation', label: 'Élévation' },
+  { id: 'props', label: 'Décor' },
+];
 
 function cssFor(tileId: string): SpriteCss | null {
   const sprite = medievalThemeAssets.sprites[tileId];
   return sprite ? spriteToCss(sprite) : null;
 }
 
-let terrain = cloneTerrain(loadStoredTerrain() ?? medievalTerrain);
-let brush = DEFAULT_BRUSH;
+function cloneTerrain(t: TerrainMap): TerrainMap {
+  return {
+    ...t,
+    tiles: t.tiles.map((row) => [...row]),
+    elevation: t.elevation.map((row) => [...row]),
+    props: t.props.map((row) => [...row]),
+  };
+}
 
-/** True for cells inside the locked buildable rectangle (always grass, not paintable here). */
+let terrain = cloneTerrain(loadStoredTerrain() ?? medievalTerrain);
+let mode: Mode = 'terrain';
+let terrainBrush = DEFAULT_TERRAIN_BRUSH;
+let elevationBrush: ElevationLevel = 1;
+let propBrush: string | null = propIds[0] ?? null;
+
+/** True for cells inside the buildable rectangle — always grass, and only editable in "Élévation" mode. */
 function isBuildable(x: number, y: number): boolean {
   return (
     x >= terrain.buildableOffsetX &&
@@ -43,17 +64,25 @@ function isBuildable(x: number, y: number): boolean {
   );
 }
 
-/** Resizes the canvas in place, keeping existing paint where coordinates still exist. */
+/** Resizes the canvas in place, keeping existing paint (all 3 layers) where coordinates still exist. */
 function resizeTerrain(width: number, height: number): void {
-  const next: string[][] = [];
+  const tiles: string[][] = [];
+  const elevation: ElevationLevel[][] = [];
+  const props: (string | null)[][] = [];
   for (let y = 0; y < height; y++) {
-    const row: string[] = [];
+    const tileRow: string[] = [];
+    const elevRow: ElevationLevel[] = [];
+    const propRow: (string | null)[] = [];
     for (let x = 0; x < width; x++) {
-      row.push(terrain.tiles[y]?.[x] ?? DEFAULT_BRUSH);
+      tileRow.push(terrain.tiles[y]?.[x] ?? DEFAULT_TERRAIN_BRUSH);
+      elevRow.push(terrain.elevation[y]?.[x] ?? 0);
+      propRow.push(terrain.props[y]?.[x] ?? null);
     }
-    next.push(row);
+    tiles.push(tileRow);
+    elevation.push(elevRow);
+    props.push(propRow);
   }
-  terrain = { ...terrain, width, height, tiles: next };
+  terrain = { ...terrain, width, height, tiles, elevation, props };
 }
 
 const app = document.querySelector<HTMLDivElement>('#app');
@@ -61,9 +90,10 @@ if (!app) throw new Error('#app not found');
 
 app.innerHTML = `
   <h1>Éditeur de carte</h1>
-  <p class="hint">Peins le terrain décoratif (herbe/eau/mousse) autour de la zone constructible (grisée, verrouillée).
-  "Enregistrer" sauvegarde dans ce navigateur — le jeu l'utilisera à la prochaine "Nouvelle partie", sur cet appareil.
-  "Exporter" donne un texte à copier-coller si tu veux que ce soit rendu permanent dans le projet.</p>
+  <p class="hint">Peins le terrain autour de la zone constructible (verrouillée, toujours en herbe) : trois calques
+  indépendants — sol décoratif, élévation (un bâtiment ne peut se poser que sur une zone plane) et décor. Bascule
+  entre eux ci-dessous. "Enregistrer" sauvegarde dans ce navigateur — le jeu l'utilisera à la prochaine
+  "Nouvelle partie". "Exporter" donne un texte à copier-coller si tu veux que ce soit rendu permanent dans le projet.</p>
 
   <div class="row">
     <label>Largeur <input type="number" id="width" min="${medievalPack.grid.width}" value="${terrain.width}"></label>
@@ -72,6 +102,9 @@ app.innerHTML = `
     <label>Décalage Y <input type="number" id="offset-y" min="0" value="${terrain.buildableOffsetY}"></label>
     <button id="resize">Appliquer la taille</button>
   </div>
+
+  <h2>Calque</h2>
+  <div id="mode-selector" class="chips"></div>
 
   <h2>Pinceau</h2>
   <div id="palette" class="chips"></div>
@@ -94,6 +127,7 @@ const heightInput = app.querySelector<HTMLInputElement>('#height')!;
 const offsetXInput = app.querySelector<HTMLInputElement>('#offset-x')!;
 const offsetYInput = app.querySelector<HTMLInputElement>('#offset-y')!;
 const resizeBtn = app.querySelector<HTMLButtonElement>('#resize')!;
+const modeSelectorEl = app.querySelector<HTMLDivElement>('#mode-selector')!;
 const paletteEl = app.querySelector<HTMLDivElement>('#palette')!;
 const gridEl = app.querySelector<HTMLDivElement>('#grid')!;
 const saveBtn = app.querySelector<HTMLButtonElement>('#save')!;
@@ -102,16 +136,83 @@ const resetBtn = app.querySelector<HTMLButtonElement>('#reset')!;
 const saveStatus = app.querySelector<HTMLSpanElement>('#save-status')!;
 const exportArea = app.querySelector<HTMLTextAreaElement>('#export-area')!;
 
-function renderPalette(): void {
-  paletteEl.innerHTML = '';
-  for (const tileId of terrainTileIds) {
+function renderModeSelector(): void {
+  modeSelectorEl.innerHTML = '';
+  for (const m of MODES) {
     const chip = document.createElement('button');
     chip.type = 'button';
     chip.className = 'chip';
-    if (tileId === brush) chip.classList.add('chip--active');
-    chip.textContent = tileId.replace('terrain-', '');
+    if (m.id === mode) chip.classList.add('chip--active');
+    chip.textContent = m.label;
     chip.addEventListener('click', () => {
-      brush = tileId;
+      mode = m.id;
+      renderModeSelector();
+      renderPalette();
+      renderGrid();
+    });
+    modeSelectorEl.appendChild(chip);
+  }
+}
+
+function renderPalette(): void {
+  paletteEl.innerHTML = '';
+
+  if (mode === 'terrain') {
+    for (const tileId of terrainTileIds) {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip';
+      if (tileId === terrainBrush) chip.classList.add('chip--active');
+      chip.textContent = tileId.replace('terrain-', '');
+      chip.addEventListener('click', () => {
+        terrainBrush = tileId;
+        renderPalette();
+      });
+      paletteEl.appendChild(chip);
+    }
+    return;
+  }
+
+  if (mode === 'elevation') {
+    const options: { value: ElevationLevel; label: string }[] = [
+      { value: 0, label: 'Plat' },
+      { value: 1, label: 'Élevé' },
+    ];
+    for (const option of options) {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip';
+      if (option.value === elevationBrush) chip.classList.add('chip--active');
+      chip.textContent = option.label;
+      chip.addEventListener('click', () => {
+        elevationBrush = option.value;
+        renderPalette();
+      });
+      paletteEl.appendChild(chip);
+    }
+    return;
+  }
+
+  // mode === 'props'
+  const eraser = document.createElement('button');
+  eraser.type = 'button';
+  eraser.className = 'chip';
+  if (propBrush === null) eraser.classList.add('chip--active');
+  eraser.textContent = 'Aucun';
+  eraser.addEventListener('click', () => {
+    propBrush = null;
+    renderPalette();
+  });
+  paletteEl.appendChild(eraser);
+
+  for (const propId of propIds) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip';
+    if (propId === propBrush) chip.classList.add('chip--active');
+    chip.textContent = propId.replace('prop-', '');
+    chip.addEventListener('click', () => {
+      propBrush = propId;
       renderPalette();
     });
     paletteEl.appendChild(chip);
@@ -125,20 +226,44 @@ function renderGrid(): void {
     for (let x = 0; x < terrain.width; x++) {
       const cell = document.createElement('div');
       cell.className = 'tile-cell';
-      const locked = isBuildable(x, y);
-      const tileId = locked ? GRASS_ID : (terrain.tiles[y]?.[x] ?? DEFAULT_BRUSH);
-      const css = cssFor(tileId);
+
+      const inBuildable = isBuildable(x, y);
+      // A cliff wall hanging from the raised cell above fully replaces this cell's own ground tile.
+      const groundId = cliffSpriteIdBelow(terrain.elevation, x, y) ?? (inBuildable ? GRASS_ID : (terrain.tiles[y]?.[x] ?? DEFAULT_TERRAIN_BRUSH));
+      const css = cssFor(groundId);
       if (css) Object.assign(cell.style, css);
-      if (locked) {
+
+      if (terrain.elevation[y]?.[x] === 1) cell.classList.add('tile-cell--elevated');
+
+      const propId = terrain.props[y]?.[x];
+      if (propId) {
+        const propCss = cssFor(propId);
+        if (propCss) {
+          const propEl = document.createElement('div');
+          propEl.className = 'tile-cell__prop';
+          Object.assign(propEl.style, propCss);
+          propEl.style.backgroundSize = 'contain';
+          cell.appendChild(propEl);
+        }
+      }
+
+      // The buildable rectangle stays locked to its grass texture and can never carry
+      // props, but its elevation is real game data — editable in "Élévation" mode.
+      const editable = !inBuildable || mode === 'elevation';
+      if (inBuildable) cell.classList.add('tile-cell--buildable-zone');
+      if (!editable) {
         cell.classList.add('tile-cell--locked');
         cell.title = 'Zone constructible (verrouillée)';
       } else {
-        cell.title = tileId;
+        cell.title = inBuildable ? 'Zone constructible' : groundId;
         cell.addEventListener('click', () => {
-          terrain.tiles[y][x] = brush;
+          if (mode === 'terrain') terrain.tiles[y][x] = terrainBrush;
+          else if (mode === 'elevation') terrain.elevation[y][x] = elevationBrush;
+          else terrain.props[y][x] = propBrush;
           renderGrid();
         });
       }
+
       gridEl.appendChild(cell);
     }
   }
@@ -216,5 +341,6 @@ resetBtn.addEventListener('click', () => {
   renderGrid();
 });
 
+renderModeSelector();
 renderPalette();
 renderGrid();

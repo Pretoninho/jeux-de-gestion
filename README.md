@@ -15,6 +15,8 @@ src/
   presentation/   couche visuelle générique, ignorée par le moteur
     assets.ts        types ThemeAssets / SpriteRef (mapping id moteur -> sprite)
     tile.ts           renderTile() : sprite si mappé, sinon placeholder coloré
+    terrain.ts        type TerrainMap : sol + élévation (0/1) + props, par case
+    cliffs.ts         sélection du mur de falaise (gauche/milieu/droite/isolé) selon les voisins élevés
   content/
     medieval/        pack thématique médiéval-fantastique, construit par angles successifs
       assets.ts        mapping d'assets du thème medieval
@@ -25,7 +27,7 @@ src/
 
 ### Le moteur de production (`tick`) et de construction (`build`)
 
-Économie à **une seule échelle** — pas de paliers empilés, la profondeur vient d'ajouter des bâtiments/recettes, pas de changer d'ordre de grandeur. Chaque pack définit des `BuildingType` (recette + capacité + coût de construction) et une grille fixe (`grid: { width, height }`). Le joueur place des instances de ces types sur la grille via `build()`, qui vérifie case libre + dans les limites + argent suffisant.
+Économie à **une seule échelle** — pas de paliers empilés, la profondeur vient d'ajouter des bâtiments/recettes, pas de changer d'ordre de grandeur. Chaque pack définit des `BuildingType` (recette + capacité + coût de construction) et une grille fixe (`grid: { width, height }`). Le joueur place des instances de ces types sur la grille via `build()`, qui vérifie case libre + dans les limites + argent suffisant + (si le pack déclare une `elevation`) élévation uniforme sous toute l'empreinte — voir "Élévation du terrain" plus bas.
 
 **v1 volontairement modeste** : grille fixe (pas de caméra/scroll), empreinte 1x1 pour tous les bâtiments, construction uniquement (pas de démolition/déplacement). Une carte plus grande avec caméra, des empreintes variables et la démolition sont prévues plus tard, une fois cette base validée — voir `CLAUDE.md`.
 
@@ -64,11 +66,15 @@ Outil de dev — jamais expédié avec le jeu (exclu du build de production, end
 
 Accès : `npm run dev` puis ouvrir `/tools/asset-composer/index.html`. Si un id composé existe déjà comme entrée manuscrite ailleurs dans le fichier, la retirer à la main (TypeScript refusera sinon une clé dupliquée).
 
+### Élévation du terrain et murs de falaise
+
+`TerrainMap` (`src/presentation/terrain.ts`) porte trois calques indépendants par case, même dimensions que `tiles` : `elevation` (0 = niveau de base, 1 = élevé — binaire, pas de paliers empilés, cohérent avec l'économie à une seule échelle) et `props` (id de décoration optionnel, ou `null`). `src/presentation/cliffs.ts` en dérive le rendu : `cliffPieceAt()` détecte, pour une case élevée dont le voisin sud est plus bas, si elle fait partie d'une suite de cases à murer (bout gauche/milieu/bout droit/isolée) — seul le bord sud a un mur (le seul que fournit l'art source, cf. `CLAUDE.md`) ; `cliffSpriteIdBelow()` donne l'id à peindre dans la case du dessous, qui remplace entièrement son propre sol. Élévation et props sont purement dans `TerrainMap` (présentation) mais `ContentPack.elevation` (moteur, `src/engine/types.ts`) en reçoit une copie du rectangle constructible au lancement de la partie : `build()` (`src/engine/simulation.ts`) refuse un placement dont l'empreinte chevauche deux élévations différentes (`reason: 'uneven-terrain'`).
+
 ### Éditeur de carte (`tools/map-editor/`)
 
-Contrairement à l'asset composer, **cet outil est expédié avec le jeu** — il doit fonctionner sur le site déployé, sans serveur. Peint la carte de terrain décorative (type `TerrainMap` dans `src/presentation/terrain.ts`) autour du rectangle constructible (`pack.grid`, affiché verrouillé en herbe) : choisir une tuile dans la palette (découverte automatiquement parmi les ids `terrain-*` du thème), cliquer les cases à peindre, ajuster largeur/hauteur/décalage si besoin. Purement présentationnel — le moteur ne connaît jamais cette carte, seul `pack.grid` compte pour la construction.
+Contrairement à l'asset composer, **cet outil est expédié avec le jeu** — il doit fonctionner sur le site déployé, sans serveur. Peint la carte (type `TerrainMap`) autour du rectangle constructible (`pack.grid`, toujours en herbe) à travers trois calques indépendants, sélectionnés via les boutons "Calque" : **Sol** (tuile décorative, palette `terrain-*`), **Élévation** (plat/élevé — seul calque éditable *à l'intérieur* du rectangle constructible, puisque c'est lui que `build()` vérifie) et **Décor** (props `prop-*`, jamais à l'intérieur du rectangle constructible, avec un chip "Aucun" pour effacer). Ajuster largeur/hauteur/décalage si besoin ; le mur de falaise et le rectangle constructible verrouillé se recalculent automatiquement à l'affichage.
 
-- **Enregistrer** : sauvegarde dans le `localStorage` du navigateur (`src/presentation/terrainStorage.ts`) — `main.ts` la préfère à la carte par défaut du pack si elle existe. En session `npm run dev` uniquement, écrit aussi directement dans `src/content/medieval/terrain.ts` (même mécanisme que l'asset composer).
+- **Enregistrer** : sauvegarde dans le `localStorage` du navigateur (`src/presentation/terrainStorage.ts`, qui migre silencieusement une carte sauvegardée avant l'ajout des calques élévation/décor) — `main.ts` la préfère à la carte par défaut du pack si elle existe. En session `npm run dev` uniquement, écrit aussi directement dans `src/content/medieval/terrain.ts` (même mécanisme que l'asset composer).
 - **Exporter** : copie la carte en JSON dans le presse-papier, pour la transmettre et l'intégrer en dur au projet.
 - **Réinitialiser** : efface la carte sauvegardée et revient à celle du pack.
 
