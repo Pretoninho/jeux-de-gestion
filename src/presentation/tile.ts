@@ -27,7 +27,11 @@ function layerCss(layer: FlatSpriteRef): LayerCss {
       size: 'auto',
     };
   }
-  return { image: `url(${layer.src})`, position: '0 0', repeat: 'no-repeat', size: 'cover' };
+  // 'contain' (not 'cover'): several sprites — buildings especially — aren't
+  // square (e.g. a tall house or a wide castle), and icons/tiles are always
+  // rendered into a square box; 'cover' would crop the top/bottom or sides
+  // to fill it. 'contain' shows the whole sprite, letterboxed if needed.
+  return { image: `url(${layer.src})`, position: 'center', repeat: 'no-repeat', size: 'contain' };
 }
 
 export interface SpriteCss {
