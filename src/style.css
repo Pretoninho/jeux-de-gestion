@@ -1,3 +1,14 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
 :root {
   --parchment: #f2e6c9;
   --parchment-dark: #e6d5a8;
@@ -19,7 +30,7 @@ body {
   font-family: system-ui, sans-serif;
   max-width: 900px;
   margin: 0 auto;
-  padding: 0 1rem 3rem;
+  padding: 0 1rem;
   background: var(--parchment);
   color: var(--ink);
 }
